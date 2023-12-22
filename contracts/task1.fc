@@ -33,6 +33,7 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
         int locked_for = cs1~load_uint(32);
         int new_seqno = cs1~load_uint(32);
 
+
         (int public_key, int execution_time, int receiver, int seqno) = load_data();
 
         throw_unless(119, equal_ints(seqno + 1, new_seqno));
