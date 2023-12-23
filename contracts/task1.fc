@@ -67,8 +67,8 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
                             .store_uint(receiver, 2 + 1 + 8 + 256)  ;; To
                             .store_coins(0)                         ;; Ton value = 0
                             .store_int(0, 1 + 4 + 4 + 64 + 32)      ;; currency_collection + IHR fees + Fwd fees + CreatedLT + CreatedAt
-                            .store_uint(0, 1)                       ;; No state init (code and data null)
-                            .store_uint(0, 1)                       ;; Body is null
+                            .store_int(0, 1)                        ;; No state init (code and data null)
+                            .store_int(0, 1)                        ;; Body is null
                             .end_cell();
         send_raw_message(msg, 128);
     }
