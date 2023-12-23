@@ -60,6 +60,7 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
         ;; claim#bb4be234 = ExtInMsgBody
         (int public_key, int execution_time, int receiver, int seqno) = load_data();
         throw_if(124, execution_time > now());
+        accept_message();
         cell msg = begin_cell()
                             .store_int(1, 2)                        ;; internal_message + ihd_disabled
                             .store_int(-1, 1)                       ;; bounce
