@@ -78,10 +78,10 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
 ;; Get methods
 ;; STORAGE TL-B
 ;; storage$_ public_key:uint256 execution_time:uint32 receiver:MsgAddressInt seqno:uint32 = Storage;
-int get_seqno() method_id {
+int get_seqno() {
   return get_data().begin_parse().skip_bits(256 + 32 + 2 + 1 + 8 + 256).preload_uint(32);
 }
 
-int get_execution_time() method_id {
+int get_execution_time() {
   return get_data().begin_parse().skip_bits(256).preload_uint(32);
 }
