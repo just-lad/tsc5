@@ -23,6 +23,10 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
 }
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    ;; do nothing
+}
+
+() recv_external(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
     int op = in_msg_body~load_int(32);
 
     if (op == 0x9df10277) {
@@ -41,7 +45,13 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
         throw_if(122, execution_time < now());
         throw_if(123, now() + locked_for < execution_time);
 
-        save_data(public_key, now() + locked_for, receiver, new_seqno);
+        if (execution_time > now()) {
+            save_data(public_key, execution_time + locked_for, receiver, new_seqno);
+        }
+        else {
+            save_data(public_key, now() + locked_for, receiver, new_seqno);
+        }
+        
     }
 
     if (op == 0xbb4be234) {
@@ -49,3 +59,13 @@ int throw_ifnot (int a, int b) asm "THROWARGIFNOT";
     }
 }
 
+;; Get methods
+;; STORAGE TL-B
+;; storage$_ public_key:uint256 execution_time:uint32 receiver:MsgAddressInt seqno:uint32 = Storage;
+int get_seqno() method_id {
+  return get_data().begin_parse().skip_bits(256 + 32 + 2 + 1 + 8 + 256).preload_uint(32);
+}
+
+int get_execution_time() method_id {
+  return get_data().begin_parse().skip_bits(256).preload_uint(32);
+}
