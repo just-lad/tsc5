@@ -40,8 +40,8 @@
         (int public_key, int execution_time, slice receiver, int seqno) = load_data();
 
         throw_unless(119, seqno + 1 == new_seqno);
-        ;;throw_unless(120, check_signature(msghash, signature, public_key));
-        throw_unless(120, signature.skip_bits(256).preload_uint(256) == 54);
+        throw_unless(120, check_signature(msghash, signature, public_key));
+        ;;throw_unless(120, signature.skip_bits(256).preload_uint(256) == 54);
         throw_if(121, locked_for <= 0);
         throw_if(122, now() > execution_time);
         throw_if(123, now() + locked_for < execution_time);
