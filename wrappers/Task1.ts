@@ -63,7 +63,7 @@ export class Task1 implements Contract {
 
     // update#9df10277 query_id:uint64 signature:bits512 ^[ locked_for:uint32 new_seqno:uint32 ] = ExtInMsgBody
     async sendUpdate(provider: ContractProvider, opcode: number, query_id: number, 
-        locked_for: bigint, new_seqno: number, signature: number) {
+        locked_for: number, new_seqno: number, signature: number) {
         let ref = beginCell()
                     .storeInt(locked_for, 32)
                     .storeUint(new_seqno, 32)

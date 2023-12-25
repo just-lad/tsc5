@@ -56,7 +56,7 @@ describe('Task1', () => {
             }, code));
         
         const deployResult = await task1.sendDeploy(deployer.getSender(), toNano('0.05'));
-        const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, 10n, 12, 54);
+        const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, 10, 12, 54);
         expect(sendExternalResult.transactions).toHaveTransaction({
             success: false,
             exitCode: 119,
@@ -76,7 +76,7 @@ describe('Task1', () => {
             }, code));
         const deployResult = await task1.sendDeploy(deployer.getSender(), toNano('0.05'));
 
-        const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, 10n, 1, 53);
+        const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, 10, 1, 53);
         expect(sendExternalResult.transactions).toHaveTransaction({
             success: false,
             exitCode: 120,
@@ -96,7 +96,7 @@ describe('Task1', () => {
             }, code));
         const deployResult = await task1.sendDeploy(deployer.getSender(), toNano('0.05'));
 
-        const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, -10n, 1, 54);
+        const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, -10, 1, 54);
         expect(sendExternalResult.transactions).toHaveTransaction({
             success: false,
             exitCode: 121,
@@ -116,8 +116,8 @@ describe('Task1', () => {
             }, code));
         const deployResult = await task1.sendDeploy(deployer.getSender(), toNano('0.05'));
 
-        const result = await task1.sendUpdate(0x9df10277, 0, 1n, 1, 54);
-        console.log("Get execution time gas used:", result)
+        const result = await task1.sendUpdate(0x9df10277, 0, 1, 1, 54);
+        //console.log("Get execution time gas used:", result)
         expect(result.transactions).toHaveTransaction({
             success: false,
             exitCode: 122,
@@ -131,22 +131,24 @@ describe('Task1', () => {
         let task1 = blockchain.openContract(
             Task1.createFromConfig({
                 publicKey: 200n,
-                executionTime: 1803424303n, 
+                executionTime: 1703491656n, 
                 receiver: deployer.address,
                 seqno: 100n,
             }, code));
         const deployResult = await task1.sendDeploy(deployer.getSender(), toNano('0.05'));
 
-        let locked_for = 10000n;
+        let locked_for = 10000;
 
         const sendExternalResult = await task1.sendUpdate(0x9df10277, 0, locked_for, 101, 54);
         
-        console.log('Now is: ', await task1.getNow());
-        console.log('executionTime is: ', await task1.getExecutionTime());
-        console.log('seqno is: ', await task1.getSeqno());
-
+        // console.log('Now is: ', await task1.getNow());
+        // console.log('executionTime is: ', await task1.getExecutionTime());
+        // console.log('seqno is: ', await task1.getSeqno());
+        // console.log("Get execution time gas used:", sendExternalResult);
+        
+        let now = new Date;
         expect(await task1.getSeqno()).toEqual(101n);
-        expect(await task1.getExecutionTime()).toEqual(2703424303n + locked_for);
+        expect(Number(await task1.getExecutionTime())).toBeCloseTo(Math.round((now.getTime()) / 1000) + locked_for, 1);
     });
 
     it('should throw 124', async () => {
@@ -156,7 +158,7 @@ describe('Task1', () => {
         let task1 = blockchain.openContract(
             Task1.createFromConfig({
                 publicKey: 200n,
-                executionTime: 1803425163n, 
+                executionTime: 1803428615n, 
                 receiver: deployer.address,
                 seqno: 1n,
             }, code));
@@ -176,13 +178,14 @@ describe('Task1', () => {
         let task1 = blockchain.openContract(
             Task1.createFromConfig({
                 publicKey: 200n,
-                executionTime: 23n, 
+                executionTime: 1703428615n, 
                 receiver: deployer.address,
                 seqno: 1n,
             }, code));
         const deployResult = await task1.sendDeploy(deployer.getSender(), toNano('0.05'));
 
         const sendExternalResult = await task1.sendClaim(0xbb4be234, 1);
+        console.log("Get execution time gas used:", sendExternalResult);
         expect(sendExternalResult.transactions).toHaveTransaction({
             success: true,
         })
