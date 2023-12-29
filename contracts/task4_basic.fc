@@ -52,21 +52,21 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     while (i < n) {
         while (j < m) {
             if (maze.at(i).at(j) == 0x2e) {
-                rtpl_m~tpush(to_tuple(0));
+                rtpl_m~tpush(0);
             }
             if (maze.at(i).at(j) == 0x58) {
-                rtpl_m~tpush(to_tuple(-1));
+                rtpl_m~tpush(-1);
             }
             if (maze.at(i).at(j) == 0x3f) {
-                rtpl_m~tpush(to_tuple(-1));
+                rtpl_m~tpush(-1);
             }
             if (maze.at(i).at(j) == 0x53) {
-                rtpl_m~tpush(to_tuple(0));
+                rtpl_m~tpush(0);
                 x1 = i;
                 y1 = j;
             }
             if (maze.at(i).at(j) == 0x45) {
-                rtpl_m~tpush(to_tuple(0));
+                rtpl_m~tpush(0);
                 x2 = i;
                 y2 = j;
             }
@@ -125,7 +125,6 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                             (~((ii == tx) & (jj == ty))) &      ;; cell is not current cell
                             (~((ii == x1) & (jj == y1)))) {     ;; cell is not start cell
                             tuple temp = rtpl_n.at(ii);
-                            temp~dump();
                             temp = tset(temp, jj, rtpl_n.at(tx).at(ty) + 1);
                             rtpl_n = tset(rtpl_n, ii, temp);
                             tuple to_visit_row = empty_tuple();
@@ -163,7 +162,8 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                     (ii < rtpl_n.tlen())) {                                         ;; index must be < len)
                     if (jj < rtpl_n.at(ii).tlen()) {                                ;; index must be < len
                         if (~((ii == tx) & (jj == ty)) &                            ;; cell is not prev cell
-                            (rtpl_n.at(ii).at(jj) == (prev_val - 1))) {             ;; cell is closer to start then current
+                            (rtpl_n.at(ii).at(jj) == (prev_val - 1)) &              ;; cell is closer to start then current
+                            (rtpl_n.at(ii).at(jj) >= 0)) {                          ;; cell is not the wall
                             prev_val = rtpl_n.at(ii).at(jj);
                             succ_path_row = empty_tuple();
                             succ_path_row~tpush(ii);
@@ -184,6 +184,11 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
             }
             jj = y2 - 1;
             ii += 1;
+        }
+        if (succ_path.tlen() == 0) {
+            maze = null();
+            tx = x1;
+            ty = y1;
         }
     }
 
