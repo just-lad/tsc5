@@ -197,5 +197,5 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         i -= 1;
     }
 
-    return (-1, 0, succ_path.tlen(), rtpl_n);
+    return (-1, 0, succ_path.tlen(), maze);
 }
