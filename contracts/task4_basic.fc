@@ -188,7 +188,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     }
 
     ;; succ_path now have points [i][j] from the end (exclusive) to the start (exclusive)
-    i = succ_path.tlen() - 1;
+    int i = succ_path.tlen() - 1;
     while (i >= 0) {
         ;; change cell [i] in the maze to '!'
         tuple temp = maze.at(succ_path.at(i).at(0));
