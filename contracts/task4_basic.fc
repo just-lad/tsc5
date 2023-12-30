@@ -195,8 +195,8 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     tuple succ_path = empty_tuple();
     (int, int, int, int, tuple) (x1, y1, x2, y2, rtpl_n) = decrypt(n, m, maze);
     
-    if (((x1 - x2) <= 1) &
-        ((x1 - x2) >= -1) &
+    if (((x1 - x2) <= 1) &      ;; check that start and finish are 
+        ((x1 - x2) >= -1) &     ;; next to each other
         ((y1 - y2) <= 1) &
         ((y1 - y2) >= -1)) {
         succ_path_len = 1;
@@ -205,6 +205,9 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
         succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
         succ_path_len = succ_path.tlen();
+        if (succ_path_len == 0) {
+            maze = null();
+        }
     }
     
 
