@@ -81,18 +81,18 @@ slice parse_sender_address (cell in_msg_full) inline {
                 .end_cell()); 
     }
 
-    ;; split_ton#068530b3 query_id:uint64 amount:Coins = InternalMsgBody;
+    ;; split_ton#068530b3 query_id:uint64 = InternalMsgBody;
     if (op == 0x068530b3) {
         ;; distributes the TON to users according to their shares
         ;; mode 1, no body
         ;; `user_share * amount / total_share`
         accept_message();
         int total_share = 0;
-        int query_id = in_msg_body~load_uint(64);
-        int balance = in_msg_body~load_coins();
+        [int balance, cell extra] = get_balance();
 
         cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
         (int key, slice val, int flag) = dict1.udict_get_min?(256);
+        throw_if(122, ~(flag));
         while (flag) {
             total_share += val~load_uint(32);
         }
@@ -125,6 +125,36 @@ slice parse_sender_address (cell in_msg_full) inline {
         ;; - Response address must be equal to the recipient address 
         ;; - Forward_amount = 1 nanoTON 
         ;; - Without custom_payload / without forward_payload.
+        accept_message();
+        int total_share = 0;
+        [int balance, cell extra] = get_balance();
+
+        cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
+        (int key, slice val, int flag) = dict1.udict_get_min?(256);
+        throw_if(122, ~(flag));
+        while (flag) {
+            total_share += val~load_uint(32);
+        }
+
+
+        ;; message(0xf8a7ea5) TokenTransfer {
+        ;; queryId: Int as uint64; // should be 0
+        ;; amount: Int as coins; // should be amount of jettons to send
+        ;; destination: Address; // should be user address / TokenNotification.from
+        ;; responseDestination: Address?; // should be myAddress()
+        ;; customPayload: Cell?; // should be null
+        ;; forwardTonAmount: Int as coins; // should be ton("0.01")
+        ;; forwardPayload: Slice as remaining; // should be emptySlice()
+
+        ;; .storeRef(TokenTransfer{
+        ;;             queryId: 0,
+        ;;             amount: a_Amount,
+        ;;             destination: msg.from,
+        ;;             responseDestination: myAddress(),
+        ;;             customPayload: null,
+        ;;             forwardTonAmount: 10000000,
+        ;;             forwardPayload: emptySlice()
+        ;;         }.toCell()) // Save not null body
     }
 }
 
