@@ -111,7 +111,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
         ;; mode 1, no body
         ;; `user_share * amount / total_share`
 
-        int total_share = 0;
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
@@ -120,6 +119,8 @@ slice parse_sender_address (cell in_msg_full) impure inline {
             dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             throw_unless(122, flag);
+
+            int total_share = 0;
 
             ;; total_share counting routin
             while (flag) {
@@ -148,9 +149,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
     if (op == 0x7362d09c) {
         ;; throw 122 (no users) or transfer jettons, send messages to the address of your token jack `jetton_address`
         
-        int total_share = 0;
-        int query_id = in_msg_body~load_uint(64);
-        int amount = in_msg_body~load_coins();
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
@@ -159,10 +157,15 @@ slice parse_sender_address (cell in_msg_full) impure inline {
             dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             throw_unless(122, flag);
+            
+            int query_id = in_msg_body~load_uint(64);
+            int amount = in_msg_body~load_coins();
+
             var cs = in_msg_full.begin_parse();
             cs~skip_bits(4);
             slice jetton_addr = cs~load_msg_addr();
 
+            int total_share = 0;
             ;; total_share counting routin
             while (flag) {
                 int share_t = val.preload_uint(32);
@@ -176,29 +179,19 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                     .store_uint(0x18, 6)                        ;; flags
                     .store_slice(jetton_addr)                   ;; destination address
                     .store_coins(20000000)                      ;; Message Value: 0.02 TON
-                    .store_uint(0, 107)                         ;; default
-                        .store_uint(0x0f8a7ea5, 32)
-                        .store_uint(query_id, 64)       ;; query_id
-                        .store_coins((((val~load_uint(32)) * amount) / total_share)) ;; amount of jettons
-                        .store_uint(1024, 11)
-                        .store_uint(key, 256)           ;; recipient address
-                        .store_uint(1024, 11)
-                        .store_uint(key, 256)           ;; Response address must be equal to the recipient address         
-                        .store_uint(0, 1)               ;; Maybe
-                        .store_coins(1)                 ;; Forward_amount = 1 nanoTON 
-                        .store_uint(0, 1)               ;; Either
-                    ;; .store_ref(begin_cell()                     ;; Cell with TokenTransfer
-                    ;;             .store_uint(0x0f8a7ea5, 32)
-                    ;;             .store_uint(query_id, 64)       ;; query_id
-                    ;;             .store_coins((((val~load_uint(32)) * amount) / total_share)) ;; amount of jettons
-                    ;;             .store_uint(1024, 11)
-                    ;;             .store_uint(key, 256)           ;; recipient address
-                    ;;             .store_uint(1024, 11)
-                    ;;             .store_uint(key, 256)           ;; Response address must be equal to the recipient address         
-                    ;;             .store_uint(0, 1)               ;; Maybe
-                    ;;             .store_coins(1)                 ;; Forward_amount = 1 nanoTON 
-                    ;;             .store_uint(0, 1)               ;; Either
-                    ;;             .end_cell())     
+                    .store_uint(1, 107)                         ;; default
+                    .store_ref(begin_cell()                     ;; Cell with TokenTransfer
+                                .store_uint(0x0f8a7ea5, 32)
+                                .store_uint(query_id, 64)       ;; query_id
+                                .store_coins((((val~load_uint(32)) * amount) / total_share)) ;; amount of jettons
+                                .store_uint(1024, 11)
+                                .store_uint(key, 256)           ;; recipient address
+                                .store_uint(1024, 11)
+                                .store_uint(key, 256)           ;; Response address must be equal to the recipient address         
+                                .store_uint(0, 1)               ;; Maybe
+                                .store_coins(1)                 ;; Forward_amount = 1 nanoTON 
+                                .store_uint(0, 1)               ;; Either
+                                .end_cell())     
                     .end_cell();
                 send_raw_message(msg, 1);                       ;; mode = 1
                 (key, val, flag) = dict1.udict_get_next?(256, key);
