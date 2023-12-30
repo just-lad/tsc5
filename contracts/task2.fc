@@ -102,11 +102,13 @@ slice parse_sender_address (cell in_msg_full) inline {
 
 }
 
-int get_users() method_id {
-    return get_data().begin_parse().skip_bits(256 + 32 + 2 + 1 + 8 + 256).preload_uint(32);
+cell get_users() method_id {
+    return get_data().begin_parse().skip_bits(11 + 256).preload_dict();
 }
 
 ;; Formula for calculating the number of tokens: `user_share * amount / total_share`
 int get_user_share(slice user_address) method_id {
-    return get_data().begin_parse().skip_bits(256).preload_uint(32);
+    cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
+    (slice share_l, int user_l) = dict1.udict_get?(256, user_address.skip_bits(11).preload_uint(256));
+    return share_l~load_uint(32);
 }
