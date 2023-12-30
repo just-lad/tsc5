@@ -43,17 +43,31 @@
         
     }
 
+    ;; if (op == 0xbb4be234) {
+    ;;     ;; claim#bb4be234 query_id:uint64 = ExtInMsgBody
+    ;;     slice ls = get_data().begin_parse();
+    ;;     ls~skip_bits(256);
+    ;;     throw_if(124, ls~load_uint(32) > now());
+    ;;     accept_message();
+    ;;     ls~skip_bits(11);
+    ;;     var msg = begin_cell()
+    ;;                     .store_uint(0x18, 6)
+    ;;                     .store_uint(0, 11)
+    ;;                     .store_uint(ls~load_uint(256), 256)
+    ;;                     .store_coins(0)
+    ;;                     .store_uint(0, 0x6B)
+    ;;                     .end_cell();
+    ;;     send_raw_message(msg, 128);
+    ;; }
+
     if (op == 0xbb4be234) {
         ;; claim#bb4be234 query_id:uint64 = ExtInMsgBody
-        slice ls = get_data().begin_parse();
-        ls~skip_bits(256);
-        throw_if(124, ls~load_uint(32) > now());
+        (int public_key, int execution_time, slice receiver, int seqno) = load_data();
+        throw_if(124, execution_time > now());
         accept_message();
-        ls~skip_bits(11);
         var msg = begin_cell()
                         .store_uint(0x18, 6)
-                        .store_uint(0, 11)
-                        .store_uint(ls~load_uint(256), 256)
+                        .store_slice(receiver)
                         .store_coins(0)
                         .store_uint(0, 0x6B)
                         .end_cell();
