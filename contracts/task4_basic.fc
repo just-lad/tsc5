@@ -7,6 +7,7 @@
 
 (int) tlen (tuple t) asm "TLEN";
 forall X -> (tuple) to_tuple (X x) asm "NOP";
+forall X -> (tuple, X) ~tpop (tuple t) asm "TPOP";
 
 forall X -> (tuple) tset (tuple tpl, int index, X value) {
     tuple rtpl = empty_tuple();
@@ -135,6 +136,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     int tx = x2;
     int ty = y2;
     int prev_val = rtpl_n.at(tx).at(ty);
+    int neig_checked = 0;
 
     while ((tx != x1) & (ty != y1)) {
         int ii = tx - 1;
@@ -157,9 +159,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                             succ_path~tpush(succ_path_row);
                             tx = ii;
                             ty = jj;
-                            succ_path~dump();
-                        }
-                        else {
+                        } else {
                             if ((succ_path.tlen() - 1) == rtpl_n.at(x2).at(y2)) {   ;; succ_path contains enough points
                                 tx = x1;
                                 ty = y1;
@@ -169,12 +169,18 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                 }
                 jj += 1;
             }
-            jj = y2 - 1;
+            jj = ty - 1;
             ii += 1;
         }
         if (succ_path.tlen() == 0) {
             tx = x1;
             ty = y1;
+        }
+    }
+    if (succ_path.tlen() > 0) {
+        if ((succ_path.at(succ_path.tlen() - 1).at(0) == x1) &
+            (succ_path.at(succ_path.tlen() - 1).at(1) == y1)) {
+            succ_path~tpop();
         }
     }
     return succ_path;
@@ -218,12 +224,10 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         best_solution = to_tuple([-1, 0, 1, maze]);
     }
     else {
-        tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
-        rtpl_n~dump();
+        rtpl_n = forwardtrace(x1, y1, rtpl_n);
         succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
-        succ_path_len = succ_path.tlen();
-        succ_path~dump();
-        if ((succ_path_len == 0) &                  ;; no solution found when ? = X
+        succ_path_len = succ_path.tlen() + 1;
+        if ((succ_path.tlen() == 0) &               ;; no solution found when ? = X
             (su_poses_xy.tlen() > 0)) {             ;; but there are superposition variants
             tuple tmaze = maze;
             ;; iterate over all superposition variants and update best_solution
@@ -245,10 +249,10 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                 (tuple, int, int, int, int, tuple) (su_poses_xyt, x1t, y1t, x2t, y2t, rtpl_nt) = decrypt(n, m, tmaze);
                 tuple rtpl_nt = forwardtrace(x1t, y1t, rtpl_nt);
                 succ_path = backtrace(x1t, y1t, x2t, y2t, rtpl_nt);
-                succ_path_len = succ_path.tlen();
-                if (succ_path_len > 0) {
+                succ_path_len = succ_path.tlen() + 1;
+                if (succ_path.tlen() > 0) {
                     int i = 0;
-                    repeat (succ_path_len) {
+                    repeat (succ_path.tlen()) {
                         if (maze.at(succ_path.at(i).at(0)).at(succ_path.at(i).at(1)) == 0x3f) {
                             probability += 1;
                         }
@@ -280,7 +284,8 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
             }
         }
     }
+
     best_solution~dump();
     ;;              -1                probability           length              solution
-    return (best_solution.at(0), best_solution.at(1), best_solution.at(2), best_solution.at(3));
+    return (best_solution.at(0), best_solution.at(1), (best_solution.at(2)), best_solution.at(3));
 }

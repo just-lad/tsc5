@@ -82,27 +82,125 @@ describe('Task4Basic', () => {
         // S ! .
         // . X !
         // . . E
+        // let row = new TupleBuilder;
+        // let maze = new TupleBuilder;
+        // row.writeNumber(bigintConversion.textToBigint('S'));
+        // row.writeNumber(bigintConversion.textToBigint('X'));
+        // row.writeNumber(bigintConversion.textToBigint('.'));
+        // let row1 = row.build();
+        // maze.writeTuple(row1);
+        // row = new TupleBuilder;
+        // row.writeNumber(bigintConversion.textToBigint('X'));
+        // row.writeNumber(bigintConversion.textToBigint('.'));
+        // row.writeNumber(bigintConversion.textToBigint('.'));
+        // row1 = row.build();
+        // maze.writeTuple(row1);
+        // row = new TupleBuilder;
+        // row.writeNumber(bigintConversion.textToBigint('.'));
+        // row.writeNumber(bigintConversion.textToBigint('.'));
+        // row.writeNumber(bigintConversion.textToBigint('E'));
+        // row1 = row.build();
+        // maze.writeTuple(row1);
+        // let init_maze = maze.build();
+        // let result = await task4Basic.getSolve(3n, 3n, init_maze);
+        // let out_maze = result.stack.skip(0).skip(1).skip(2).readTuple();
+        // let out_row1 = out_maze.readTuple();
+        // let out_row2 = out_maze.readTuple();
+        // let out_row3 = out_maze.readTuple();
+        
+        // let readable_maze = [[bigintConversion.bigintToText(out_row1.readBigNumber()), 
+        //                         bigintConversion.bigintToText(out_row1.readBigNumber()),
+        //                             bigintConversion.bigintToText(out_row1.readBigNumber())],
+        //                     [bigintConversion.bigintToText(out_row2.readBigNumber()), 
+        //                         bigintConversion.bigintToText(out_row2.readBigNumber()),
+        //                             bigintConversion.bigintToText(out_row2.readBigNumber())],
+        //                     [bigintConversion.bigintToText(out_row3.readBigNumber()), 
+        //                         bigintConversion.bigintToText(out_row3.readBigNumber()),
+        //                             bigintConversion.bigintToText(out_row3.readBigNumber())]
+        //                                     ]
+        // console.log("Result ", readable_maze);
+    });
+    it('should solve 4x4', async () => {
+        // basic maze
+        // . S . .
+        // . . . .
+        // . X X ?
+        // . . E .
+
+        // solved maze
+        // . S . .
+        // ! . . .
+        // ! X X ?
+        // . ! E .
+    });
+    it('should solve 8x5', async () => {
         let row = new TupleBuilder;
         let maze = new TupleBuilder;
         row.writeNumber(bigintConversion.textToBigint('S'));
+        row.writeNumber(bigintConversion.textToBigint('X'));
         row.writeNumber(bigintConversion.textToBigint('.'));
-        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('X'));
         let row1 = row.build();
         maze.writeTuple(row1);
         row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('X'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row1 = row.build();
         maze.writeTuple(row1);
         row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('X'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row1 = row.build();
+        maze.writeTuple(row1);
+        row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row1 = row.build();
+        maze.writeTuple(row1);
+        row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('X'));
+        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row1 = row.build();
+        maze.writeTuple(row1);
+        row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('X'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('X'));
+        row1 = row.build();
+        maze.writeTuple(row1);
+        row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
+        row1 = row.build();
+        maze.writeTuple(row1);
+        row = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('X'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('E'));
         row1 = row.build();
         maze.writeTuple(row1);
         let init_maze = maze.build();
-        let result = await task4Basic.getSolve(3n, 3n, init_maze);
+        let result = await task4Basic.getSolve(8n, 5n, init_maze);
         let out_maze = result.stack.skip(0).skip(1).skip(2).readTuple();
         let out_row1 = out_maze.readTuple();
         let out_row2 = out_maze.readTuple();
@@ -118,53 +216,6 @@ describe('Task4Basic', () => {
                                 bigintConversion.bigintToText(out_row3.readBigNumber()),
                                     bigintConversion.bigintToText(out_row3.readBigNumber())]
                                             ]
-        // let readable_maze = [[(out_row1.readBigNumber()), 
-        //     (out_row1.readBigNumber()),
-        //         (out_row1.readBigNumber())],
-        // [(out_row2.readBigNumber()), 
-        //     (out_row2.readBigNumber()),
-        //         (out_row2.readBigNumber())],
-        // [(out_row3.readBigNumber()), 
-        //     (out_row3.readBigNumber()),
-        //         (out_row3.readBigNumber())]
-        //                 ]
-        
-        console.log("Input ", [['S', '.', '.'], ['.', 'X', 'X'], ['.', '.', 'E']]);
-        console.log("Expected ", [['S', '.', '.'], ['!', 'X', 'X'], ['.', '!', 'E']]);
         console.log("Result ", readable_maze);
-
-        // expect(readable_maze).toEqual([['S', '!', '.'], ['.', 'X', '!'], ['.', '.', 'E']]);
-    });
-    it('should solve 4x4', async () => {
-        // basic maze
-        // . S . .
-        // . . . .
-        // . X X ?
-        // . . E .
-
-        // solved maze
-        // . S . .
-        // ! . . .
-        // ! X X ?
-        // . ! E .
-    });
-    it('should solve 6x7', async () => {
-        // basic maze
-        // . . . . S .
-        // . . . . . .
-        // . X X . . .
-        // . . X ? X X
-        // . . . . . E
-        // . . . . . .
-        // . . . . . .
-
-        // solved maze
-        // . . . ! S .
-        // . ! ! . . .
-        // ! X X . . .
-        // . ! X ? X X
-        // . . ! ! ! E
-        // . . . . . .
-        // . . . . . .
     });
 });
