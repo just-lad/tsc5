@@ -176,7 +176,7 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                     .store_uint(0x18, 6)                        ;; flags
                     .store_slice(jetton_addr)                   ;; destination address
                     .store_coins(20000000)                      ;; Message Value: 0.02 TON
-                    .store_uint(1, 107)                         ;; default
+                    .store_uint(0, 107)                         ;; default
                     .store_ref(begin_cell()                     ;; Cell with TokenTransfer
                                 .store_uint(0x0f8a7ea5, 32)
                                 .store_uint(query_id, 64)       ;; query_id
