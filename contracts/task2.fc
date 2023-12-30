@@ -218,8 +218,8 @@ cell get_users() method_id {
 int get_user_share(slice user_address) method_id {
     slice ls = get_data().begin_parse();
     ls~skip_bits(267);
-    cell dict1 = ls.load_dict();
+    cell dict1 = ls~load_dict();
     user_address~skip_bits(11);
-    (slice share_l, int flag) = dict1.udict_get?(256, user_address.load_uint(256));
+    (slice share_l, int flag) = dict1.udict_get?(256, user_address~load_uint(256));
     return share_l~load_uint(32);
 }
