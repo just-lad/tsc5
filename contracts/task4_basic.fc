@@ -224,56 +224,50 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         if ((succ_path.tlen() == 0) &               ;; no solution found when ? = X
             (su_poses_xy.tlen() > 0)) {             ;; but there are superposition variants
             tuple tmaze = maze;
-            ;; iterate over all superposition variants and update best_solution
-            int variants = 2; ;;(su_poses_xy.tlen());   ;; N superposition obstacles, so 2^N variants
+            int variants = 2;                   ;; N superposition obstacles, so 2^N variants
             repeat (su_poses_xy.tlen() - 1) {
                 variants *= 2;
             }
             variants -= 1;
-            while (variants >= 0) {
-                ;; 0 bit
-                ;; 1 bit
-                ;; .....
-                ;; N bit        N = su_poses_xy.tlen()
+            int i = 0;
+            repeat (su_poses_xy.tlen()) {
+                if ((((variants) & (1 << i)) >> i) == 1) {
+                    tuple tmaze_r = tmaze.at(su_poses_xy.at(i).at(0));
+                    tmaze_r = tset(tmaze_r, su_poses_xy.at(i).at(1), 0x2e);   ;; . - no obstacles = 0x2e
+                    tmaze = tset(tmaze, su_poses_xy.at(i).at(0), tmaze_r);
+                }
+                i += 1;
+            }
+            (tuple, int, int, int, int, tuple) (su_poses_xyt, x1t, y1t, x2t, y2t, rtpl_nt) = decrypt(n, m, tmaze);
+            rtpl_nt = forwardtrace(x1t, y1t, rtpl_nt);
+            succ_path = backtrace(x1t, y1t, x2t, y2t, rtpl_nt);
+            succ_path_len = succ_path.tlen() + 1;
+            if (succ_path.tlen() > 0) {
                 int i = 0;
-                repeat (su_poses_xy.tlen()) {
-                    if ((((variants) & (1 << i)) >> i) == 1) {
-                        tuple tmaze_r = tmaze.at(su_poses_xy.at(i).at(0));
-                        tmaze_r = tset(tmaze_r, su_poses_xy.at(i).at(1), 0x2e);   ;; . - no obstacles = 0x2e
-                        tmaze = tset(tmaze, su_poses_xy.at(i).at(0), tmaze_r);
+                repeat (succ_path.tlen()) {
+                    if (maze.at(succ_path.at(i).at(0)).at(succ_path.at(i).at(1)) == 0x3f) {
+                        probability += 1;
                     }
                     i += 1;
                 }
-                (tuple, int, int, int, int, tuple) (su_poses_xyt, x1t, y1t, x2t, y2t, rtpl_nt) = decrypt(n, m, tmaze);
-                rtpl_nt = forwardtrace(x1t, y1t, rtpl_nt);
-                succ_path = backtrace(x1t, y1t, x2t, y2t, rtpl_nt);
-                succ_path_len = succ_path.tlen() + 1;
-                if (succ_path.tlen() > 0) {
-                    int i = 0;
-                    repeat (succ_path.tlen()) {
-                        if (maze.at(succ_path.at(i).at(0)).at(succ_path.at(i).at(1)) == 0x3f) {
-                            probability += 1;
-                        }
-                        i += 1;
-                    }
-                    ;; check new solution to be better (1. probability 2. length)
-                    if (best_solution.at(3).tlen() == 0) {
+                ;; check new solution to be better (1. probability 2. length)
+                if (best_solution.at(3).tlen() == 0) {
+                    best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                    
+                } else {
+                    if (best_solution.at(1) > probability) {
                         best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
-                        
                     } else {
-                        if (best_solution.at(1) > probability) {
-                            best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
-                        } else {
-                            if ((best_solution.at(1) == probability) &
-                                (best_solution.at(2) > succ_path_len)) {
-                                    best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
-                                }
-                        }
+                        if ((best_solution.at(1) == probability) &
+                            (best_solution.at(2) > succ_path_len)) {
+                                best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                            }
                     }
                 }
-                variants -= 1;
-                probability = 0;
+            } else {
+                best_solution = to_tuple([-1, 0, 0, null()]);
             }
+
         } else {
             if (succ_path_len == 0) {               ;; no solution found when ? = X
                 best_solution = to_tuple([-1, 0, 0, null()]);

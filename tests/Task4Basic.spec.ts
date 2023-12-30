@@ -139,7 +139,7 @@ describe('Task4Basic', () => {
         row.writeNumber(bigintConversion.textToBigint('S'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row.writeNumber(bigintConversion.textToBigint('.'));
-        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('.'));    // ?
         row.writeNumber(bigintConversion.textToBigint('X'));
         let row1 = row.build();
         maze.writeTuple(row1);
@@ -186,7 +186,7 @@ describe('Task4Basic', () => {
         row = new TupleBuilder;
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('.'));
-        row.writeNumber(bigintConversion.textToBigint('?'));
+        row.writeNumber(bigintConversion.textToBigint('.')); // ?
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('.'));
         row1 = row.build();
