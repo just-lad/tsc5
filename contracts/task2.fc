@@ -1,9 +1,112 @@
 #include "imports/stdlib.fc";
 
+;; STORAGE TL-B
+;; - admin_address: MsgAddressInt
+;; - users: (HashmapE 256 uint32)
+
+;; set_data(begin_cell()
+;;     .store_uint(public_key, 256)
+;;     .store_uint(now() + locked_for, 32)
+;;     .store_uint(0, 11)                  
+;;     .store_uint(receiver, 256)
+;;     .store_uint(new_seqno, 32)
+;;     .end_cell());
+
+int are_slices_equal? (slice a, slice b) asm "SDEQ";
+
+slice parse_sender_address (cell in_msg_full) inline {
+    var cs = in_msg_full.begin_parse();
+    var flags = cs~load_uint(4);
+    slice sender_address = cs~load_msg_addr();
+    return sender_address;
+}
+
+
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
-    ;; do nothing
+    int op = in_msg_body~load_uint(32);
+
+    ;; add_user#368ddef3 query_id:uint64 address:MsgAddressInt share:uint32 = InternalMsgBody;
+    if (op == 0x368ddef3) { 
+        slice local_storage = get_data().begin_parse();     ;; get data
+        slice admin_addr = local_storage~load_msg_addr();   ;; read admin address to check
+
+        throw_unless(120, are_slices_equal?(admin_addr, parse_sender_address(in_msg_full))); ;; check sender == admin, throw 120 (not admin)
+        accept_message();
+
+        cell dict1 = new_dict();
+        if (~ slice_empty?(local_storage)) {
+            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+        }
+        
+        int user_n = in_msg_body.skip_bits(64 + 11).preload_uint(256);          ;; get user address as int (MsgAddressInt = 11 + 256)
+        int share = in_msg_body.skip_bits(64 + 11 + 256).preload_uint(32);      ;; ger user's share
+        slice share_n = begin_cell().store_uint(share, 32).end_cell().begin_parse();
+        (slice share_l, int user_l) = dict1.udict_get?(256, user_n);            ;; get user and share from storage
+        if (share_l.slice_empty?()) {                                           ;; check if exists in dict
+            dict1~udict_set(256, user_n, share_n);                              ;; not exist -> add
+        } else {
+            dict1~udict_replace?(256, user_n, share_n);                          ;; exist -> update
+        }
+
+        set_data(begin_cell()                                                   ;; save storage
+                        .store_slice(admin_addr)
+                        .store_dict(dict1)
+                        .end_cell());    
+        
+    }
+
+    ;; remove_user#278205c8 query_id:uint64 address:MsgAddressInt = InternalMsgBody;
+    if (op == 0x278205c8) {
+        slice local_storage = get_data().begin_parse();     ;; get data
+        slice admin_addr = local_storage~load_msg_addr();   ;; read admin address to check
+
+        throw_unless(120, are_slices_equal?(admin_addr, parse_sender_address(in_msg_full))); ;; check sender == admin, throw 120 (not admin)
+        accept_message();
+
+        cell dict1 = new_dict();
+        if (~ slice_empty?(local_storage)) {
+            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+        }
+
+        int user_n = in_msg_body.skip_bits(64 + 11).preload_uint(256);       ;; get user address as int (MsgAddressInt = 11 + 256)
+        (slice share_l, int user_l) = dict1.udict_get?(256, user_n);      ;; get user and share from storage
+
+        throw_unless(121, share_l.slice_empty?());                      ;; user not exist -> throw 121
+
+        (cell dict1, int flag) = udict_delete?(dict1, 256, user_l);     ;; user exists -> delete
+        
+        set_data(begin_cell()                                           ;; save storage
+                .store_slice(admin_addr)
+                .store_dict(dict1)
+                .end_cell()); 
+    }
+
+    ;; split_ton#068530b3 query_id:uint64 amount:Coins = InternalMsgBody;
+    if (op == 0x068530b3) {
+        ;; distributes the TON to users according to their shares
+        ;; mode 1, no body
+        accept_message();
+    }
+
+    ;; transfer_notification#7362d09c query_id:uint64 amount:Coins = InternalMsgBody;
+    if (op == 0x7362d09c) {
+        ;; throw 122 (no users) or transfer jettons, send messages to the address of your token jack `jetton_address`
+        ;; - Message Value: 0.02 TON
+        ;; - Response address must be equal to the recipient address 
+        ;; - Forward_amount = 1 nanoTON 
+        ;; - Without custom_payload / without forward_payload.
+    }
 }
 
 () recv_external(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
 
+}
+
+int get_users() method_id {
+    return get_data().begin_parse().skip_bits(256 + 32 + 2 + 1 + 8 + 256).preload_uint(32);
+}
+
+;; Formula for calculating the number of tokens: `user_share * amount / total_share`
+int get_user_share(slice user_address) method_id {
+    return get_data().begin_parse().skip_bits(256).preload_uint(32);
 }
