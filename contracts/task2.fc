@@ -85,7 +85,36 @@ slice parse_sender_address (cell in_msg_full) inline {
     if (op == 0x068530b3) {
         ;; distributes the TON to users according to their shares
         ;; mode 1, no body
+        ;; `user_share * amount / total_share`
         accept_message();
+        int total_share = 0;
+
+        cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
+        (int key, slice val, int flag) = dict1.udict_get_min?(256);
+        while (flag) {
+            total_share += val~load_uint(32);
+        }
+
+        (int key, slice val, int flag) = dict1.udict_get_min?(256);
+        [int balance, cell extra] = get_balance();
+        while (flag) {
+            ;; sending TONs according to share
+            int to_send = 0;
+            int share = val~load_uint(32);
+            if (total_share > 0) {
+                to_send = ((share * balance) / total_share);
+            }
+            cell msg = begin_cell()
+                    .store_uint(0x18, 6) ;; flags
+                    .store_slice(begin_cell().store_uint(0, 11).store_uint(key, 256).end_cell().begin_parse()) ;; destination address
+                    .store_coins(to_send) ;; we don't care about this value right now
+                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; default message headers (see sending messages page)
+                    .store_uint(0, 32) ;; zero opcode - means simple transfer message with comment
+                    .end_cell();
+            send_raw_message(msg, 1); ;; mode = 1
+            (key, val, flag) = dict1.udict_get_next?(256, key);
+        }
+        
     }
 
     ;; transfer_notification#7362d09c query_id:uint64 amount:Coins = InternalMsgBody;
