@@ -154,7 +154,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
         int total_share = 0;
         int query_id = in_msg_body~load_uint(64);
         int amount = in_msg_body~load_coins();
-        amount~dump();
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
@@ -162,7 +161,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
         if (~ slice_empty?(local_storage)) { 
             dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
-            throw_unless(122, flag);
             var cs = in_msg_full.begin_parse();
             cs~skip_bits(4);
             slice jetton_addr = cs~load_msg_addr();
@@ -176,8 +174,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
             ;; sending Jettons according to share 
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             while (flag) {
-                int share = val~load_uint(32);
-                int to_send = ((share * amount) / total_share);
                 cell msg = begin_cell()
                     .store_uint(0x18, 6)                        ;; flags
                     .store_slice(jetton_addr)                   ;; destination address
@@ -186,7 +182,7 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                     .store_ref(begin_cell()                     ;; Cell with TokenTransfer
                                 .store_uint(0x0f8a7ea5, 32)
                                 .store_uint(query_id, 64)       ;; query_id
-                                .store_coins(to_send)           ;; amount of jettons
+                                .store_coins((((val~load_uint(32)) * amount) / total_share)) ;; amount of jettons
                                 .store_uint(1024, 11)
                                 .store_uint(key, 256)           ;; recipient address
                                 .store_uint(1024, 11)
