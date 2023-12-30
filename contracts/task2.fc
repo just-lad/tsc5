@@ -150,10 +150,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
     ;; transfer_notification#7362d09c query_id:uint64 amount:Coins = InternalMsgBody;
     if (op == 0x7362d09c) {
         ;; throw 122 (no users) or transfer jettons, send messages to the address of your token jack `jetton_address`
-        ;; - Message Value: 0.02 TON
-        ;; - Response address must be equal to the recipient address 
-        ;; - Forward_amount = 1 nanoTON 
-        ;; - Without custom_payload / without forward_payload.
         var cs = in_msg_full.begin_parse();
         cs~skip_bits(4);
         slice jetton_addr = cs~load_msg_addr();
@@ -187,7 +183,7 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                     .store_uint(0x18, 6)                        ;; flags
                     .store_slice(jetton_addr)                   ;; destination address
                     .store_coins(20000000)                      ;; Message Value: 0.02 TON
-                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; default
+                    .store_uint(0, 107)                         ;; default
                     .store_ref(begin_cell()                     ;; Cell with TokenTransfer
                                 .store_uint(0x0f8a7ea5, 32)
                                 .store_uint(query_id, 64)       ;; query_id
@@ -213,12 +209,17 @@ slice parse_sender_address (cell in_msg_full) impure inline {
 }
 
 cell get_users() method_id {
-    return get_data().begin_parse().skip_bits(11 + 256).preload_dict();
+    slice ds = get_data().begin_parse();
+    ds~skip_bits(267);
+    return ds~load_dict();
 }
 
 ;; Formula for calculating the number of tokens: `user_share * amount / total_share`
 int get_user_share(slice user_address) method_id {
-    cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
-    (slice share_l, int user_l) = dict1.udict_get?(256, user_address.skip_bits(11).preload_uint(256));
+    slice ls = get_data().begin_parse();
+    ls~skip_bits(267);
+    cell dict1 = ls.load_dict();
+    user_address~skip_bits(11);
+    (slice share_l, int flag) = dict1.udict_get?(256, user_address.load_uint(256));
     return share_l~load_uint(32);
 }
