@@ -182,7 +182,7 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                     .store_uint(1, 107)                         ;; default
                     .store_ref(begin_cell()                     ;; Cell with TokenTransfer
                                 .store_uint(0x0f8a7ea5, 32)
-                                .store_uint(query_id, 64)       ;; query_id
+                                .store_uint(0, 64)              ;; query_id
                                 .store_coins((((val~load_uint(32)) * amount) / total_share)) ;; amount of jettons
                                 .store_uint(1024, 11)
                                 .store_uint(key, 256)           ;; recipient address
