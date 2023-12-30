@@ -21,9 +21,9 @@ slice parse_sender_address (cell in_msg_full) impure inline {
 
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
-    ;; if (in_msg_body.slice_bits() < 32) {
-    ;;     return ();
-    ;; }
+    if (in_msg_body.slice_bits() < 32) {
+        return ();
+    }
     int op = in_msg_body~load_uint(32);
 
     ;; add_user#368ddef3 query_id:uint64 address:MsgAddressInt share:uint32 = InternalMsgBody;
@@ -84,7 +84,7 @@ slice parse_sender_address (cell in_msg_full) impure inline {
             in_msg_body~skip_bits(64 + 11);
             int user_n = in_msg_body~load_uint(256);                        ;; get user address as int (MsgAddressInt = 11 + 256)
             ;;int share = in_msg_body~load_uint(32);                          ;; get user's share
-            
+
             (slice share_l, int flag) = dict1.udict_get?(256, user_n);      ;; get user and share from storage
             if (flag) {
                 (cell dict1, int flag) = udict_delete?(dict1, 256, user_n); ;; user exists -> delete
@@ -188,11 +188,9 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                                 .store_uint(0x0f8a7ea5, 32)
                                 .store_uint(query_id, 64)       ;; query_id
                                 .store_coins(to_send)           ;; amount of jettons
-                                .store_uint(4, 3)
-                                .store_uint(0, 8)
+                                .store_uint(1024, 11)
                                 .store_uint(key, 256)           ;; recipient address
-                                .store_uint(4, 3)
-                                .store_uint(0, 8)
+                                .store_uint(1024, 11)
                                 .store_uint(key, 256)           ;; Response address must be equal to the recipient address         
                                 .store_uint(0, 1)               ;; Maybe
                                 .store_coins(1)                 ;; Forward_amount = 1 nanoTON 
