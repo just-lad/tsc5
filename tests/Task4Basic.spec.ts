@@ -90,8 +90,8 @@ describe('Task4Basic', () => {
         let row1 = row.build();
         maze.writeTuple(row1);
         row = new TupleBuilder;
-        row.writeNumber(bigintConversion.textToBigint('?'));
         row.writeNumber(bigintConversion.textToBigint('X'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row1 = row.build();
         maze.writeTuple(row1);

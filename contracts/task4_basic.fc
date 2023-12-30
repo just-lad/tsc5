@@ -157,6 +157,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                             succ_path~tpush(succ_path_row);
                             tx = ii;
                             ty = jj;
+                            succ_path~dump();
                         }
                         else {
                             if ((succ_path.tlen() - 1) == rtpl_n.at(x2).at(y2)) {   ;; succ_path contains enough points
@@ -184,9 +185,11 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     int i = succ_path.tlen() - 1;
     while (i >= 0) {
         ;; change cell [i] in the maze to '!'
-        tuple temp = maze.at(succ_path.at(i).at(0));
-        temp = tset(temp, succ_path.at(i).at(1), 0x21);     ;; ! - path = 0x21
-        maze = tset(maze, succ_path.at(i).at(0), temp);
+        tuple temp = maze.at(succ_path.at(i).at(0)); 
+        if (temp.at(succ_path.at(i).at(1)) != 0x53) {           ;; S - start = 0x53
+            temp = tset(temp, succ_path.at(i).at(1), 0x21);     ;; ! - path = 0x21
+            maze = tset(maze, succ_path.at(i).at(0), temp);
+        }
         i -= 1;
     }
     return maze;
@@ -216,8 +219,10 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     }
     else {
         tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
+        rtpl_n~dump();
         succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
         succ_path_len = succ_path.tlen();
+        succ_path~dump();
         if ((succ_path_len == 0) &                  ;; no solution found when ? = X
             (su_poses_xy.tlen() > 0)) {             ;; but there are superposition variants
             tuple tmaze = maze;
@@ -275,6 +280,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
             }
         }
     }
+    best_solution~dump();
     ;;              -1                probability           length              solution
     return (best_solution.at(0), best_solution.at(1), best_solution.at(2), best_solution.at(3));
 }
