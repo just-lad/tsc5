@@ -46,9 +46,10 @@
     if (op == 0xbb4be234) {
         ;; claim#bb4be234 query_id:uint64 = ExtInMsgBody
         slice ls = get_data().begin_parse();
-        ls~skip_bits(267);
+        ls~skip_bits(256);
         throw_if(124, ls~load_uint(32) > now());
         accept_message();
+        ls~skip_bits(11);
         var msg = begin_cell()
                         .store_uint(0x18, 6)
                         .store_uint(0, 11)
