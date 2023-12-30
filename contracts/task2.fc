@@ -12,9 +12,7 @@
 ;;     .store_uint(new_seqno, 32)
 ;;     .end_cell());
 
-int are_slices_equal? (slice a, slice b) asm "SDEQ";
-
-slice parse_sender_address (cell in_msg_full) inline {
+slice parse_sender_address (cell in_msg_full) impure inline {
     var cs = in_msg_full.begin_parse();
     var flags = cs~load_uint(4);
     slice sender_address = cs~load_msg_addr();
@@ -23,6 +21,7 @@ slice parse_sender_address (cell in_msg_full) inline {
 
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    accept_message();
     int op = in_msg_body~load_uint(32);
 
     ;; add_user#368ddef3 query_id:uint64 address:MsgAddressInt share:uint32 = InternalMsgBody;
@@ -30,8 +29,15 @@ slice parse_sender_address (cell in_msg_full) inline {
         slice local_storage = get_data().begin_parse();     ;; get data
         slice admin_addr = local_storage~load_msg_addr();   ;; read admin address to check
 
-        throw_unless(120, are_slices_equal?(admin_addr, parse_sender_address(in_msg_full))); ;; check sender == admin, throw 120 (not admin)
-        accept_message();
+        var cs = in_msg_full.begin_parse();
+        var flags = cs~load_uint(4);
+        slice sender = cs~load_msg_addr();
+
+        sender~dump();
+        admin_addr~dump();
+
+        throw_unless(120, equal_slices(admin_addr, sender)); ;; check sender == admin, throw 120 (not admin)
+        ;;accept_message();
 
         cell dict1 = new_dict();
         if (~ slice_empty?(local_storage)) {
@@ -60,8 +66,8 @@ slice parse_sender_address (cell in_msg_full) inline {
         slice local_storage = get_data().begin_parse();     ;; get data
         slice admin_addr = local_storage~load_msg_addr();   ;; read admin address to check
 
-        throw_unless(120, are_slices_equal?(admin_addr, parse_sender_address(in_msg_full))); ;; check sender == admin, throw 120 (not admin)
-        accept_message();
+        throw_unless(120, equal_slices(admin_addr, parse_sender_address(in_msg_full))); ;; check sender == admin, throw 120 (not admin)
+        ;;accept_message();
 
         cell dict1 = new_dict();
         if (~ slice_empty?(local_storage)) {
@@ -86,7 +92,7 @@ slice parse_sender_address (cell in_msg_full) inline {
         ;; distributes the TON to users according to their shares
         ;; mode 1, no body
         ;; `user_share * amount / total_share`
-        accept_message();
+        ;;accept_message();
         int total_share = 0;
         [int balance, cell extra] = get_balance();
 
@@ -127,7 +133,7 @@ slice parse_sender_address (cell in_msg_full) inline {
         ;; - Forward_amount = 1 nanoTON 
         ;; - Without custom_payload / without forward_payload.
         slice jetton_addr = parse_sender_address(in_msg_full);
-        accept_message();
+        ;;accept_message();
         int total_share = 0;
         int query_id = in_msg_body~load_uint(64);
         int amount = in_msg_body~load_coins();
