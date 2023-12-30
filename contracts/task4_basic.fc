@@ -80,26 +80,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     return (x1, y1, x2, y2, rtpl_n);
 }
 
-
-() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
-    ;;
-}
-;; . - no obstacles = 0x2e
-;; X - obstacle = 0x58
-;; ? - obstacle in superposition = 0x3f
-;; S - start = 0x53
-;; E - end = 0x45
-;; ! - path = 0x21
-
-(int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
-    ;; decrypt maze
-    ;; should output tuple([-1, superpositions_1, length_1, tuple(solution_1)],
-    ;;                     [-1, superpositions_2, length_2, tuple(solution_2)],
-    ;;                     .................................................
-    ;;                     [-1, superpositions_N, length_N, tuple(solution_N)])
-
-    (int, int, int, int, tuple) (x1, y1, x2, y2, rtpl_n) = decrypt(n, m, maze);
-
+(tuple) forwardtrace (int x1, int y1, tuple rtpl_n) impure inline {
     ;; forwardtrace
     tuple to_visit_row = empty_tuple();
     tuple to_visit = empty_tuple();
@@ -131,18 +112,21 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                             to_visit_row~tpush(ii);
                             to_visit_row~tpush(jj);
                             to_visit~tpush(to_visit_row);
-                        };
-                    };
-                };
+                        }
+                    }
+                }
                 to_visit_row = empty_tuple();
                 jj += 1;
-            };
+            }
             jj = ty - 1;
             ii += 1;
-        };
+        }
         to_visit = to_visit.tshift();
-    };
+    }
+    return rtpl_n;
+}
 
+(tuple) backtrace (int x1, int y1, int x2, int y2, tuple rtpl_n) impure inline {
     ;; backtrace
     tuple succ_path = empty_tuple();
     tuple succ_path_row = empty_tuple();
@@ -186,11 +170,41 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
             ii += 1;
         }
         if (succ_path.tlen() == 0) {
-            maze = null();
             tx = x1;
             ty = y1;
         }
     }
+    return succ_path;
+}
+
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    ;;
+}
+;; . - no obstacles = 0x2e
+;; X - obstacle = 0x58
+;; ? - obstacle in superposition = 0x3f
+;; S - start = 0x53
+;; E - end = 0x45
+;; ! - path = 0x21
+
+(int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
+
+    ;; tuple best_solution = [-1, probability, succ_path.tlen(), solved_maze];
+    int succ_path_len = 0;
+    (int, int, int, int, tuple) (x1, y1, x2, y2, rtpl_n) = decrypt(n, m, maze);
+    ifnot (((x1 - x2) <= 1) &
+            ((x1 - x2) >= -1) &
+            ((y1 - y2) <= 1) &
+            ((y1 - y2) >= -1)) {
+        tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
+        tuple succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
+        succ_path_len = succ_path.tlen();
+    }
+    else {
+        succ_path_len = 1;
+    }
+    
 
     ;; succ_path now have points [i][j] from the end (exclusive) to the start (exclusive)
     int i = succ_path.tlen() - 1;
@@ -202,5 +216,5 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         i -= 1;
     }
 
-    return (-1, 0, succ_path.tlen(), maze);
+    return (-1, 0, succ_path_len, maze);
 }

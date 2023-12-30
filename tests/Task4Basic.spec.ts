@@ -90,7 +90,7 @@ describe('Task4Basic', () => {
         let row1 = row.build();
         maze.writeTuple(row1);
         row = new TupleBuilder;
-        row.writeNumber(bigintConversion.textToBigint('X'));
+        row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row1 = row.build();
@@ -129,8 +129,8 @@ describe('Task4Basic', () => {
         //         (out_row3.readBigNumber())]
         //                 ]
         
-        console.log("Input ", [['S', '.', '.'], ['.', '?', '.'], ['.', '.', 'E']]);
-        console.log("Expected ", [['S', '!', '.'], ['.', '?', '!'], ['.', '.', 'E']]);
+        console.log("Input ", [['S', '.', '.'], ['.', 'X', 'X'], ['.', '.', 'E']]);
+        console.log("Expected ", [['S', '.', '.'], ['!', 'X', 'X'], ['.', '!', 'E']]);
         console.log("Result ", readable_maze);
 
         // expect(readable_maze).toEqual([['S', '!', '.'], ['.', 'X', '!'], ['.', '.', 'E']]);
