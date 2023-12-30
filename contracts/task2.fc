@@ -88,6 +88,8 @@ slice parse_sender_address (cell in_msg_full) inline {
         ;; `user_share * amount / total_share`
         accept_message();
         int total_share = 0;
+        int query_id = in_msg_body~load_uint(64);
+        int balance = in_msg_body~load_coins();
 
         cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
         (int key, slice val, int flag) = dict1.udict_get_min?(256);
@@ -96,7 +98,6 @@ slice parse_sender_address (cell in_msg_full) inline {
         }
 
         (int key, slice val, int flag) = dict1.udict_get_min?(256);
-        [int balance, cell extra] = get_balance();
         while (flag) {
             ;; sending TONs according to share
             int to_send = 0;
