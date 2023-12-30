@@ -192,17 +192,19 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
 
     ;; tuple best_solution = [-1, probability, succ_path.tlen(), solved_maze];
     int succ_path_len = 0;
+    tuple succ_path = empty_tuple();
     (int, int, int, int, tuple) (x1, y1, x2, y2, rtpl_n) = decrypt(n, m, maze);
-    ifnot (((x1 - x2) <= 1) &
-            ((x1 - x2) >= -1) &
-            ((y1 - y2) <= 1) &
-            ((y1 - y2) >= -1)) {
-        tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
-        tuple succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
-        succ_path_len = succ_path.tlen();
+    
+    if (((x1 - x2) <= 1) &
+        ((x1 - x2) >= -1) &
+        ((y1 - y2) <= 1) &
+        ((y1 - y2) >= -1)) {
+        succ_path_len = 1;
     }
     else {
-        succ_path_len = 1;
+        tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
+        succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
+        succ_path_len = succ_path.tlen();
     }
     
 
