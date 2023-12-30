@@ -21,41 +21,42 @@ slice parse_sender_address (cell in_msg_full) impure inline {
 
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
-    accept_message();
     int op = in_msg_body~load_uint(32);
 
     ;; add_user#368ddef3 query_id:uint64 address:MsgAddressInt share:uint32 = InternalMsgBody;
     if (op == 0x368ddef3) { 
         slice local_storage = get_data().begin_parse();     ;; get data
-        slice admin_addr = local_storage~load_msg_addr();   ;; read admin address to check
+        local_storage~skip_bits(11); ;; skip flags and workchain
+        int admin_addr = local_storage~load_uint(256);   ;; read admin address to check
 
         var cs = in_msg_full.begin_parse();
-        var flags = cs~load_uint(4);
-        slice sender = cs~load_msg_addr();
+        cs~skip_bits(15);
+        int sender = cs~load_uint(256);
 
-        sender~dump();
-        admin_addr~dump();
-
-        throw_unless(120, equal_slices(admin_addr, sender)); ;; check sender == admin, throw 120 (not admin)
-        ;;accept_message();
+        throw_unless(120, admin_addr == sender); ;; check sender == admin, throw 120 (not admin)
+        
+        in_msg_body~skip_bits(64 + 11);
+        int user_n = in_msg_body~load_uint(256);            ;; get user address as int (MsgAddressInt = 11 + 256)
+        int share = in_msg_body~load_uint(32);              ;; ger user's share
+        slice share_n = begin_cell().store_uint(share, 32).end_cell().begin_parse();
 
         cell dict1 = new_dict();
+
         if (~ slice_empty?(local_storage)) {
-            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+            dict1 = local_storage~load_dict();                              ;; load hashmap if it exists
+            (slice share_l, int flag) = dict1.udict_get?(256, user_n);    ;; get user and share from storage
+            if (~ flag) {                                   ;; check if exists in dict
+                dict1~udict_set(256, user_n, share_n);                      ;; not exist -> add
+            } else {
+                dict1~udict_replace?(256, user_n, share_n);                 ;; exist -> update
         }
-        
-        int user_n = in_msg_body.skip_bits(64 + 11).preload_uint(256);          ;; get user address as int (MsgAddressInt = 11 + 256)
-        int share = in_msg_body.skip_bits(64 + 11 + 256).preload_uint(32);      ;; ger user's share
-        slice share_n = begin_cell().store_uint(share, 32).end_cell().begin_parse();
-        (slice share_l, int user_l) = dict1.udict_get?(256, user_n);            ;; get user and share from storage
-        if (share_l.slice_empty?()) {                                           ;; check if exists in dict
-            dict1~udict_set(256, user_n, share_n);                              ;; not exist -> add
         } else {
-            dict1~udict_replace?(256, user_n, share_n);                          ;; exist -> update
+            ;; dict empty
+            dict1~udict_set(256, user_n, share_n);                          ;; not exist -> add
         }
 
-        set_data(begin_cell()                                                   ;; save storage
-                        .store_slice(admin_addr)
+        set_data(begin_cell()                                               ;; save storage
+                        .store_slice(begin_cell().store_uint(0, 11).store_uint(admin_addr, 256).end_cell().begin_parse())
                         .store_dict(dict1)
                         .end_cell());    
         
@@ -64,27 +65,41 @@ slice parse_sender_address (cell in_msg_full) impure inline {
     ;; remove_user#278205c8 query_id:uint64 address:MsgAddressInt = InternalMsgBody;
     if (op == 0x278205c8) {
         slice local_storage = get_data().begin_parse();     ;; get data
-        slice admin_addr = local_storage~load_msg_addr();   ;; read admin address to check
+        local_storage~skip_bits(11);                        ;; skip flags and workchain
+        int admin_addr = local_storage~load_uint(256);      ;; read admin address to check
 
-        throw_unless(120, equal_slices(admin_addr, parse_sender_address(in_msg_full))); ;; check sender == admin, throw 120 (not admin)
-        ;;accept_message();
+        var cs = in_msg_full.begin_parse();
+        cs~skip_bits(15);
+        int sender = cs~load_uint(256);
+
+        throw_unless(120, admin_addr == sender); ;; check sender == admin, throw 120 (not admin)
 
         cell dict1 = new_dict();
-        if (~ slice_empty?(local_storage)) {
+        if (~ slice_empty?(local_storage)) { 
             dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+
+            in_msg_body~skip_bits(64 + 11);
+            int user_n = in_msg_body~load_uint(256);                        ;; get user address as int (MsgAddressInt = 11 + 256)
+            int share = in_msg_body~load_uint(32);                          ;; get user's share
+            slice share_n = begin_cell().store_uint(share, 32).end_cell().begin_parse();
+            (slice share_l, int flag) = dict1.udict_get?(256, user_n);      ;; get user and share from storage
+            if (flag) {     ;; user exists -> delete
+                (cell dict1, int flag) = udict_delete?(dict1, 256, user_n); ;; user exists -> delete
+            } else {
+                throw(121);                 ;; user not exist -> throw 121
+            }
+        } else {                            ;; dict empty
+            throw(121);                     ;; user not exist -> throw 121
         }
-
-        int user_n = in_msg_body.skip_bits(64 + 11).preload_uint(256);       ;; get user address as int (MsgAddressInt = 11 + 256)
-        (slice share_l, int user_l) = dict1.udict_get?(256, user_n);      ;; get user and share from storage
-
-        throw_unless(121, share_l.slice_empty?());                      ;; user not exist -> throw 121
-
-        (cell dict1, int flag) = udict_delete?(dict1, 256, user_l);     ;; user exists -> delete
         
-        set_data(begin_cell()                                           ;; save storage
-                .store_slice(admin_addr)
-                .store_dict(dict1)
-                .end_cell()); 
+        set_data(begin_cell()               ;; save storage
+                        .store_slice(begin_cell()
+                                        .store_uint(0, 11)
+                                        .store_uint(admin_addr, 256)
+                                        .end_cell()
+                                        .begin_parse())     ;; to get Slice
+                        .store_dict(dict1)
+                        .end_cell()); 
     }
 
     ;; split_ton#068530b3 query_id:uint64 = InternalMsgBody;
