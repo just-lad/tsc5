@@ -176,7 +176,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
             ;; sending Jettons according to share 
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             while (flag) {
-                flag~dump();
                 int share = val~load_uint(32);
                 int to_send = ((share * amount) / total_share);
                 cell msg = begin_cell()
@@ -200,7 +199,6 @@ slice parse_sender_address (cell in_msg_full) impure inline {
                 send_raw_message(msg, 1);                       ;; mode = 1
                 (key, val, flag) = dict1.udict_get_next?(256, key);
             }
-            return ();
         } else {
             throw(122);
         }
