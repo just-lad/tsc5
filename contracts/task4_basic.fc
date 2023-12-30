@@ -37,10 +37,11 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     return temp2;
 }
 
-(int, int, int, int, tuple) decrypt (int n, int m, tuple maze) impure inline {
+(tuple, int, int, int, int, tuple) decrypt (int n, int m, tuple maze) impure inline {
     ;; decrypts maze
     tuple rtpl_n = empty_tuple();
     tuple rtpl_m = empty_tuple();
+    tuple su_poses_xy = empty_tuple();
     int x1 = 0;
     int x2 = 0;
     int y1 = 0;
@@ -50,22 +51,23 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     int j = 0;
 
     while (i < n) {
-        while (j < m) {
-            if (maze.at(i).at(j) == 0x2e) {
+        while (j < m) {                         
+            if (maze.at(i).at(j) == 0x2e) {     ;; . - no obstacles = 0x2e
                 rtpl_m~tpush(0);
             }
-            if (maze.at(i).at(j) == 0x58) {
+            if (maze.at(i).at(j) == 0x58) {     ;; X - obstacle = 0x58
                 rtpl_m~tpush(-1);
             }
-            if (maze.at(i).at(j) == 0x3f) {
+            if (maze.at(i).at(j) == 0x3f) {     ;; ? - obstacle in superposition = 0x3f
                 rtpl_m~tpush(-1);
+                su_poses_xy~tpush(to_tuple([i, j]));
             }
-            if (maze.at(i).at(j) == 0x53) {
+            if (maze.at(i).at(j) == 0x53) {     ;; S - start = 0x53
                 rtpl_m~tpush(0);
                 x1 = i;
                 y1 = j;
             }
-            if (maze.at(i).at(j) == 0x45) {
+            if (maze.at(i).at(j) == 0x45) {     ;; E - end = 0x45
                 rtpl_m~tpush(0);
                 x2 = i;
                 y2 = j;
@@ -77,7 +79,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         rtpl_n~tpush(rtpl_m);
         rtpl_m = empty_tuple();
     }
-    return (x1, y1, x2, y2, rtpl_n);
+    return (su_poses_xy, x1, y1, x2, y2, rtpl_n);
 }
 
 (tuple) forwardtrace (int x1, int y1, tuple rtpl_n) impure inline {
@@ -177,49 +179,102 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     return succ_path;
 }
 
-
-() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
-    ;;
-}
-;; . - no obstacles = 0x2e
-;; X - obstacle = 0x58
-;; ? - obstacle in superposition = 0x3f
-;; S - start = 0x53
-;; E - end = 0x45
-;; ! - path = 0x21
-
-(int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
-
-    ;; tuple best_solution = [-1, probability, succ_path.tlen(), solved_maze];
-    int succ_path_len = 0;
-    tuple succ_path = empty_tuple();
-    (int, int, int, int, tuple) (x1, y1, x2, y2, rtpl_n) = decrypt(n, m, maze);
-    
-    if (((x1 - x2) <= 1) &      ;; check that start and finish are 
-        ((x1 - x2) >= -1) &     ;; next to each other
-        ((y1 - y2) <= 1) &
-        ((y1 - y2) >= -1)) {
-        succ_path_len = 1;
-    }
-    else {
-        tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
-        succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
-        succ_path_len = succ_path.tlen();
-        if (succ_path_len == 0) {
-            maze = null();
-        }
-    }
-    
-
+(tuple) make_solution (tuple succ_path, tuple maze) impure inline {
     ;; succ_path now have points [i][j] from the end (exclusive) to the start (exclusive)
     int i = succ_path.tlen() - 1;
     while (i >= 0) {
         ;; change cell [i] in the maze to '!'
         tuple temp = maze.at(succ_path.at(i).at(0));
-        temp = tset(temp, succ_path.at(i).at(1), 0x21);
+        temp = tset(temp, succ_path.at(i).at(1), 0x21);     ;; ! - path = 0x21
         maze = tset(maze, succ_path.at(i).at(0), temp);
         i -= 1;
     }
+    return maze;
+}
 
-    return (-1, 0, succ_path_len, maze);
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    ;;
+}
+
+
+(int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
+
+    ;; tuple best_solution = [-1, probability, succ_path.tlen(), solved_maze];
+    tuple best_solution = to_tuple([-1, 0, 0, empty_tuple()]);
+
+    int probability = 0;
+    int succ_path_len = 0;
+    tuple succ_path = empty_tuple();
+    (tuple, int, int, int, int, tuple) (su_poses_xy, x1, y1, x2, y2, rtpl_n) = decrypt(n, m, maze);
+    
+    if (((x1 - x2) <= 1) &      ;; check that start and finish are 
+        ((x1 - x2) >= -1) &     ;; next to each other
+        ((y1 - y2) <= 1) &
+        ((y1 - y2) >= -1)) {
+        best_solution = to_tuple([-1, 0, 1, maze]);
+    }
+    else {
+        tuple rtpl_n = forwardtrace(x1, y1, rtpl_n);
+        succ_path = backtrace(x1, y1, x2, y2, rtpl_n);
+        succ_path_len = succ_path.tlen();
+        if ((succ_path_len == 0) &                  ;; no solution found when ? = X
+            (su_poses_xy.tlen() > 0)) {             ;; but there are superposition variants
+            tuple tmaze = maze;
+            ;; iterate over all superposition variants and update best_solution
+            int variants = (su_poses_xy.tlen() * su_poses_xy.tlen());   ;; N superposition obstacles, so N^2-1 variants
+            while (variants >= 0) {
+                ;; 0 bit
+                ;; 1 bit
+                ;; .....
+                ;; N bit        N = su_poses_xy.tlen()
+                int i = 0;
+                repeat (su_poses_xy.tlen()) {
+                    if ((((variants) & (1 << i)) >> i) == 1) {
+                        tuple tmaze_r = tmaze.at(su_poses_xy.at(i).at(0));
+                        tmaze_r = tset(tmaze_r, su_poses_xy.at(i).at(1), 0x2e);   ;; . - no obstacles = 0x2e
+                        tmaze = tset(tmaze, su_poses_xy.at(i).at(0), tmaze_r);
+                    }
+                    i += 1;
+                }
+                (tuple, int, int, int, int, tuple) (su_poses_xyt, x1t, y1t, x2t, y2t, rtpl_nt) = decrypt(n, m, tmaze);
+                tuple rtpl_nt = forwardtrace(x1t, y1t, rtpl_nt);
+                succ_path = backtrace(x1t, y1t, x2t, y2t, rtpl_nt);
+                succ_path_len = succ_path.tlen();
+                if (succ_path_len > 0) {
+                    int i = 0;
+                    repeat (succ_path_len) {
+                        if (maze.at(succ_path.at(i).at(0)).at(succ_path.at(i).at(1)) == 0x3f) {
+                            probability += 1;
+                        }
+                        i += 1;
+                    }
+                    ;; check new solution to be better (1. probability 2. length)
+                    if (best_solution.at(3).tlen() == 0) {
+                        best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                        
+                    } else {
+                        if (best_solution.at(1) > probability) {
+                            best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                        } else {
+                            if ((best_solution.at(1) == probability) &
+                                (best_solution.at(2) > succ_path_len)) {
+                                    best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                                }
+                        }
+                    }
+                }
+                variants -= 1;
+                probability = 0;
+            }
+        } else {
+            if (succ_path_len == 0) {               ;; no solution found when ? = X
+                best_solution = to_tuple([-1, 0, 0, null()]);
+            } else {
+                best_solution = to_tuple([-1, 0, succ_path_len, make_solution(succ_path, maze)]);
+            }
+        }
+    }
+    ;;              -1                probability           length              solution
+    return (best_solution.at(0), best_solution.at(1), best_solution.at(2), best_solution.at(3));
 }
