@@ -95,6 +95,7 @@ slice parse_sender_address (cell in_msg_full) inline {
         throw_if(122, ~(flag));
         while (flag) {
             total_share += val~load_uint(32);
+            (key, val, flag) = dict1.udict_get_next?(256, key);
         }
 
         (int key, slice val, int flag) = dict1.udict_get_min?(256);
@@ -125,36 +126,46 @@ slice parse_sender_address (cell in_msg_full) inline {
         ;; - Response address must be equal to the recipient address 
         ;; - Forward_amount = 1 nanoTON 
         ;; - Without custom_payload / without forward_payload.
+        slice jetton_addr = parse_sender_address(in_msg_full);
         accept_message();
         int total_share = 0;
-        [int balance, cell extra] = get_balance();
+        int query_id = in_msg_body~load_uint(64);
+        int amount = in_msg_body~load_coins();
 
         cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
         (int key, slice val, int flag) = dict1.udict_get_min?(256);
         throw_if(122, ~(flag));
         while (flag) {
             total_share += val~load_uint(32);
+            (key, val, flag) = dict1.udict_get_next?(256, key);
         }
 
-
-        ;; message(0xf8a7ea5) TokenTransfer {
-        ;; queryId: Int as uint64; // should be 0
-        ;; amount: Int as coins; // should be amount of jettons to send
-        ;; destination: Address; // should be user address / TokenNotification.from
-        ;; responseDestination: Address?; // should be myAddress()
-        ;; customPayload: Cell?; // should be null
-        ;; forwardTonAmount: Int as coins; // should be ton("0.01")
-        ;; forwardPayload: Slice as remaining; // should be emptySlice()
-
-        ;; .storeRef(TokenTransfer{
-        ;;             queryId: 0,
-        ;;             amount: a_Amount,
-        ;;             destination: msg.from,
-        ;;             responseDestination: myAddress(),
-        ;;             customPayload: null,
-        ;;             forwardTonAmount: 10000000,
-        ;;             forwardPayload: emptySlice()
-        ;;         }.toCell()) // Save not null body
+        (int key, slice val, int flag) = dict1.udict_get_min?(256);
+        while (flag) {
+            ;; sending TONs according to share
+            int to_send = 0;
+            int share = val~load_uint(32);
+            if (total_share > 0) {
+                to_send = ((share * amount) / total_share);
+            }
+            slice reciever = begin_cell().store_uint(0, 11).store_uint(key, 256).end_cell().begin_parse();
+            cell msg = begin_cell()
+                    .store_uint(0x18, 6)                ;; flags
+                    .store_slice(jetton_addr)           ;; destination address
+                    .store_coins(20000000)              ;; Message Value: 0.02 TON
+                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; default message headers (see sending messages page)
+                    .store_uint(0, 32)                  ;; zero opcode - means simple transfer message with comment
+                    .store_ref(begin_cell()             ;; Cell with TokenTransfer
+                                .store_uint(0, 64)      ;; query_id
+                                .store_coins(to_send)   ;; amount of coins
+                                .store_slice(reciever)  ;; destination
+                                .store_slice(reciever)  ;; responseDestination
+                                .store_coins(1)         ;; forwardTonAmount
+                                .end_cell())     
+                    .end_cell();
+            send_raw_message(msg, 1); ;; mode = 1
+            (key, val, flag) = dict1.udict_get_next?(256, key);
+        }
     }
 }
 
