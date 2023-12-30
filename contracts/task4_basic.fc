@@ -136,7 +136,6 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     int tx = x2;
     int ty = y2;
     int prev_val = rtpl_n.at(tx).at(ty);
-    int neig_checked = 0;
 
     while ((tx != x1) & (ty != y1)) {
         int ii = tx - 1;
@@ -159,7 +158,8 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                             succ_path~tpush(succ_path_row);
                             tx = ii;
                             ty = jj;
-                        } else {
+                        }
+                        else {
                             if ((succ_path.tlen() - 1) == rtpl_n.at(x2).at(y2)) {   ;; succ_path contains enough points
                                 tx = x1;
                                 ty = y1;
@@ -175,12 +175,6 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         if (succ_path.tlen() == 0) {
             tx = x1;
             ty = y1;
-        }
-    }
-    if (succ_path.tlen() > 0) {
-        if ((succ_path.at(succ_path.tlen() - 1).at(0) == x1) &
-            (succ_path.at(succ_path.tlen() - 1).at(1) == y1)) {
-            succ_path~tpop();
         }
     }
     return succ_path;
@@ -231,7 +225,11 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
             (su_poses_xy.tlen() > 0)) {             ;; but there are superposition variants
             tuple tmaze = maze;
             ;; iterate over all superposition variants and update best_solution
-            int variants = (su_poses_xy.tlen() * su_poses_xy.tlen());   ;; N superposition obstacles, so N^2-1 variants
+            int variants = 2; ;;(su_poses_xy.tlen());   ;; N superposition obstacles, so 2^N variants
+            repeat (su_poses_xy.tlen() - 1) {
+                variants *= 2;
+            }
+            variants -= 1;
             while (variants >= 0) {
                 ;; 0 bit
                 ;; 1 bit
@@ -247,7 +245,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                     i += 1;
                 }
                 (tuple, int, int, int, int, tuple) (su_poses_xyt, x1t, y1t, x2t, y2t, rtpl_nt) = decrypt(n, m, tmaze);
-                tuple rtpl_nt = forwardtrace(x1t, y1t, rtpl_nt);
+                rtpl_nt = forwardtrace(x1t, y1t, rtpl_nt);
                 succ_path = backtrace(x1t, y1t, x2t, y2t, rtpl_nt);
                 succ_path_len = succ_path.tlen() + 1;
                 if (succ_path.tlen() > 0) {
