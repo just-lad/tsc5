@@ -21,6 +21,9 @@ slice parse_sender_address (cell in_msg_full) impure inline {
 
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if (in_msg_body.slice_bits() < 32) {
+        return ();
+    }
     int op = in_msg_body~load_uint(32);
 
     ;; add_user#368ddef3 query_id:uint64 address:MsgAddressInt share:uint32 = InternalMsgBody;
@@ -107,37 +110,41 @@ slice parse_sender_address (cell in_msg_full) impure inline {
         ;; distributes the TON to users according to their shares
         ;; mode 1, no body
         ;; `user_share * amount / total_share`
-        ;;accept_message();
+
         int total_share = 0;
-        [int balance, cell extra] = get_balance();
+        slice local_storage = get_data().begin_parse();
+        local_storage~skip_bits(11 + 256);
 
-        cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
-        (int key, slice val, int flag) = dict1.udict_get_min?(256);
-        throw_if(122, ~(flag));
-        while (flag) {
-            total_share += val~load_uint(32);
-            (key, val, flag) = dict1.udict_get_next?(256, key);
-        }
+        cell dict1 = new_dict();
+        if (~ slice_empty?(local_storage)) { 
+            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+            (int key, slice val, int flag) = dict1.udict_get_min?(256);
+            throw_unless(122, flag);
 
-        (int key, slice val, int flag) = dict1.udict_get_min?(256);
-        while (flag) {
-            ;; sending TONs according to share
-            int to_send = 0;
-            int share = val~load_uint(32);
-            if (total_share > 0) {
-                to_send = ((share * balance) / total_share);
+            ;; total_share counting routin
+            while (flag) {
+                int share_t = val.preload_uint(32);
+                total_share += share_t;
+                (key, val, flag) = dict1.udict_get_next?(256, key);
             }
-            cell msg = begin_cell()
-                    .store_uint(0x18, 6) ;; flags
-                    .store_slice(begin_cell().store_uint(0, 11).store_uint(key, 256).end_cell().begin_parse()) ;; destination address
-                    .store_coins(to_send) ;; we don't care about this value right now
-                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; default message headers (see sending messages page)
-                    .store_uint(0, 32) ;; zero opcode - means simple transfer message with comment
+            ;; sending routin 
+            (int key, slice val, int flag) = dict1.udict_get_min?(256);
+            while (flag) {
+                int share = val~load_uint(32);
+                int to_send = ((share * msg_value) / total_share);
+
+                var msg = begin_cell()
+                    .store_uint(0x18, 6)    ;; flags
+                    .store_uint(0, 11)      ;; address 11 bit
+                    .store_uint(key, 256)   ;; address 256 bit
+                    .store_grams(to_send)   ;; value
+                    .store_uint(0, 107) ;; default
                     .end_cell();
-            send_raw_message(msg, 1); ;; mode = 1
-            (key, val, flag) = dict1.udict_get_next?(256, key);
+                send_raw_message(msg, 1);
+                (key, val, flag) = dict1.udict_get_next?(256, key);
+            }
+            return();
         }
-        
     }
 
     ;; transfer_notification#7362d09c query_id:uint64 amount:Coins = InternalMsgBody;
@@ -147,45 +154,56 @@ slice parse_sender_address (cell in_msg_full) impure inline {
         ;; - Response address must be equal to the recipient address 
         ;; - Forward_amount = 1 nanoTON 
         ;; - Without custom_payload / without forward_payload.
-        slice jetton_addr = parse_sender_address(in_msg_full);
-        ;;accept_message();
+        var cs = in_msg_full.begin_parse();
+        cs~skip_bits(4);
+        slice jetton_addr = cs~load_msg_addr();
         int total_share = 0;
         int query_id = in_msg_body~load_uint(64);
         int amount = in_msg_body~load_coins();
 
-        cell dict1 = get_data().begin_parse().skip_bits(11 + 256).preload_dict();
-        (int key, slice val, int flag) = dict1.udict_get_min?(256);
-        throw_if(122, ~(flag));
-        while (flag) {
-            total_share += val~load_uint(32);
-            (key, val, flag) = dict1.udict_get_next?(256, key);
-        }
+        int total_share = 0;
+        slice local_storage = get_data().begin_parse();
+        local_storage~skip_bits(11 + 256);
 
-        (int key, slice val, int flag) = dict1.udict_get_min?(256);
-        while (flag) {
-            ;; sending TONs according to share
-            int to_send = 0;
-            int share = val~load_uint(32);
-            if (total_share > 0) {
-                to_send = ((share * amount) / total_share);
+        cell dict1 = new_dict();
+        if (~ slice_empty?(local_storage)) { 
+            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+            (int key, slice val, int flag) = dict1.udict_get_min?(256);
+            throw_unless(122, flag);
+
+            ;; total_share counting routin
+            while (flag) {
+                int share_t = val.preload_uint(32);
+                total_share += share_t;
+                (key, val, flag) = dict1.udict_get_next?(256, key);
             }
-            slice reciever = begin_cell().store_uint(0, 11).store_uint(key, 256).end_cell().begin_parse();
-            cell msg = begin_cell()
-                    .store_uint(0x18, 6)                ;; flags
-                    .store_slice(jetton_addr)           ;; destination address
-                    .store_coins(20000000)              ;; Message Value: 0.02 TON
-                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; default message headers (see sending messages page)
-                    .store_uint(0, 32)                  ;; zero opcode - means simple transfer message with comment
-                    .store_ref(begin_cell()             ;; Cell with TokenTransfer
-                                .store_uint(0, 64)      ;; query_id
-                                .store_coins(to_send)   ;; amount of coins
-                                .store_slice(reciever)  ;; destination
-                                .store_slice(reciever)  ;; responseDestination
-                                .store_coins(1)         ;; forwardTonAmount
+            ;; sending Jettons according to share 
+            (int key, slice val, int flag) = dict1.udict_get_min?(256);
+            while (flag) {
+                int share = val~load_uint(32);
+                int to_send = ((share * amount) / total_share);
+                slice user = begin_cell().store_uint(0, 11).store_uint(key, 256).end_cell().begin_parse();
+                cell msg = begin_cell()
+                    .store_uint(0x18, 6)                        ;; flags
+                    .store_slice(jetton_addr)                   ;; destination address
+                    .store_coins(20000000)                      ;; Message Value: 0.02 TON
+                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; default
+                    .store_ref(begin_cell()                     ;; Cell with TokenTransfer
+                                .store_uint(0x0f8a7ea5, 32)
+                                .store_uint(query_id, 64)       ;; query_id
+                                .store_coins(to_send)           ;; amount of jettons
+                                .store_slice(user)              ;; recipient address
+                                .store_slice(user)              ;; Response address must be equal to the recipient address
+                                .store_uint(0, 1)               ;; Maybe
+                                .store_coins(1)                 ;; Forward_amount = 1 nanoTON 
+                                .store_uint(0, 1)               ;; Either
                                 .end_cell())     
                     .end_cell();
-            send_raw_message(msg, 1); ;; mode = 1
-            (key, val, flag) = dict1.udict_get_next?(256, key);
+                send_raw_message(msg, 1);                       ;; mode = 1
+                (key, val, flag) = dict1.udict_get_next?(256, key);
+            }
+        } else {
+            throw(122);
         }
     }
 }
