@@ -135,10 +135,10 @@ slice parse_sender_address (cell in_msg_full) impure inline {
 
                 var msg = begin_cell()
                     .store_uint(0x18, 6)    ;; flags
-                    .store_uint(0, 11)      ;; address 11 bit
+                    .store_uint(1024, 11)      ;; address 11 bit
                     .store_uint(key, 256)   ;; address 256 bit
-                    .store_grams(to_send)   ;; value
-                    .store_uint(1, 107)     ;; default
+                    .store_coins(to_send)   ;; value
+                    .store_uint(0, 107)     ;; default
                     .end_cell();
                 send_raw_message(msg, 1);
                 (key, val, flag) = dict1.udict_get_next?(256, key);
