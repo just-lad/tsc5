@@ -204,7 +204,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
 (int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
 
     ;; tuple best_solution = [-1, probability, succ_path.tlen(), solved_maze];
-    tuple best_solution = to_tuple([-1, 0, 0, empty_tuple()]);
+    tuple best_solution = to_tuple([0, 0, 0, empty_tuple()]);
 
     int probability = 0;
     int succ_path_len = 0;
@@ -215,7 +215,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         ((x1 - x2) >= -1) &     ;; next to each other
         ((y1 - y2) <= 1) &
         ((y1 - y2) >= -1)) {
-        best_solution = to_tuple([-1, 0, 1, maze]);
+        best_solution = to_tuple([0, 0, 1, maze]);
     }
     else {
         rtpl_n = forwardtrace(x1, y1, rtpl_n);
@@ -252,27 +252,27 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                 }
                 ;; check new solution to be better (1. probability 2. length)
                 if (best_solution.at(3).tlen() == 0) {
-                    best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                    best_solution = to_tuple([0, probability, succ_path_len, make_solution(succ_path, maze)]);
                     
                 } else {
                     if (best_solution.at(1) > probability) {
-                        best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                        best_solution = to_tuple([0, probability, succ_path_len, make_solution(succ_path, maze)]);
                     } else {
                         if ((best_solution.at(1) == probability) &
                             (best_solution.at(2) > succ_path_len)) {
-                                best_solution = to_tuple([-1, probability, succ_path_len, make_solution(succ_path, maze)]);
+                                best_solution = to_tuple([0, probability, succ_path_len, make_solution(succ_path, maze)]);
                             }
                     }
                 }
             } else {
-                best_solution = to_tuple([-1, 0, 0, null()]);
+                best_solution = to_tuple([0, 0, 0, null()]);
             }
 
         } else {
             if (succ_path_len == 0) {               ;; no solution found when ? = X
-                best_solution = to_tuple([-1, 0, 0, null()]);
+                best_solution = to_tuple([0, 0, 0, null()]);
             } else {
-                best_solution = to_tuple([-1, 0, succ_path_len, make_solution(succ_path, maze)]);
+                best_solution = to_tuple([0, 0, succ_path_len, make_solution(succ_path, maze)]);
             }
         }
     }
