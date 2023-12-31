@@ -91,44 +91,45 @@
     }
 
     ;; split_ton#068530b3 query_id:uint64 = InternalMsgBody;
-    ;; if (op == 0x068530b3) {
-    ;;     ;; distributes the TON to users according to their shares
-    ;;     ;; mode 1, no body
-    ;;     ;; `user_share * amount / total_share`
+    if (op == 0x068530b3) {
+        ;; distributes the TON to users according to their shares
+        ;; mode 1, no body
+        ;; `user_share * amount / total_share`
 
-    ;;     slice local_storage = get_data().begin_parse();
-    ;;     local_storage~skip_bits(11 + 256);
+        slice local_storage = get_data().begin_parse();
+        local_storage~skip_bits(11 + 256);
 
-    ;;     cell dict1 = new_dict();
-    ;;     if (~ slice_empty?(local_storage)) { 
-    ;;         dict1 = local_storage~load_dict();              ;; load hashmap if it exists
-    ;;         (int key, slice val, int flag) = dict1.udict_get_min?(256);
-    ;;         throw_unless(122, flag);
+        cell dict1 = new_dict();
+        if (~ slice_empty?(local_storage)) { 
+            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+            (int key, slice val, int flag) = dict1.udict_get_min?(256);
+            throw_unless(122, flag);
 
-    ;;         int total_share = 0;
+            int total_share = 0;
 
-    ;;         ;; total_share counting routin
-    ;;         while (flag) {
-    ;;             int share_t = val.preload_uint(32);
-    ;;             total_share += share_t;
-    ;;             (key, val, flag) = dict1.udict_get_next?(256, key);
-    ;;         }
-    ;;         ;; sending routin 
-    ;;         (int key, slice val, int flag) = dict1.udict_get_min?(256);
-    ;;         while (flag) {
-    ;;             var msg = begin_cell()
-    ;;                 .store_uint(0x18, 6)    ;; flags
-    ;;                 .store_uint(1024, 11)   ;; address 11 bit
-    ;;                 .store_uint(key, 256)   ;; address 256 bit
-    ;;                 .store_coins((((val~load_uint(32)) * msg_value) / total_share))   ;; value
-    ;;                 .store_uint(0, 107)     ;; default
-    ;;                 .end_cell();
-    ;;             send_raw_message(msg, 1);
-    ;;             (key, val, flag) = dict1.udict_get_next?(256, key);
-    ;;         }
-    ;;         return();
-    ;;     }
-    ;; }
+            ;; total_share counting routin
+            while (flag) {
+                int share_t = val.preload_uint(32);
+                total_share += share_t;
+                (key, val, flag) = dict1.udict_get_next?(256, key);
+            }
+            ;; sending routin 
+            (int key, slice val, int flag) = dict1.udict_get_min?(256);
+            while (flag) {
+                var msg = begin_cell()
+                    .store_uint(0x18, 6)    ;; flags
+                    .store_uint(1024, 11)   ;; address 11 bit
+                    .store_uint(key, 256)   ;; address 256 bit
+                    .store_coins((((val~load_uint(32)) * msg_value) / total_share))   ;; value
+                    .store_uint(0, 107)     ;; default
+                    .end_cell();
+                send_raw_message(msg, 1);
+                (key, val, flag) = dict1.udict_get_next?(256, key);
+            }
+            return();
+        }
+        throw(122);
+    }
 
     ;; transfer_notification#7362d09c query_id:uint64 amount:Coins = InternalMsgBody;
     if (op == 0x7362d09c) {
@@ -187,7 +188,9 @@
                 send_raw_message(msg, 1);                       ;; mode = 1
                 (key, val, flag) = dict1.udict_get_next?(256, key);
             }
+            return ();
         }
+        throw(122);
     }
 }
 
