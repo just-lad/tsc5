@@ -99,9 +99,8 @@
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
-        cell dict1 = new_dict();
         if (~ slice_empty?(local_storage)) { 
-            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+            cell dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             throw_unless(122, flag);
 
@@ -138,9 +137,8 @@
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
-        cell dict1 = new_dict();
         if (~ slice_empty?(local_storage)) { 
-            dict1 = local_storage~load_dict();              ;; load hashmap if it exists
+            cell dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             throw_unless(122, flag);
             
@@ -174,7 +172,7 @@
                     .store_uint(1, 107)                         ;; default
                     .store_ref(begin_cell()                     ;; Cell with TokenTransfer
                                 .store_uint(0x0f8a7ea5, 32)
-                                .store_uint(0, 64)              ;; query_id
+                                .store_uint(query_id, 64)              ;; query_id
                                 .store_coins((((val~load_uint(32)) * amount) / total_share)) ;; amount of jettons
                                 .store_uint(1024, 11)
                                 .store_uint(key, 256)           ;; recipient address
