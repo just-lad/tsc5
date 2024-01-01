@@ -202,6 +202,9 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
 
 
 (int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
+    if (maze.tlen() == 0) {
+        return (-1, 0, 0, null());
+    }
 
     ;; tuple best_solution = [-1, probability, succ_path.tlen(), solved_maze];
     tuple best_solution = to_tuple([-1, 0, 0, empty_tuple()]);
