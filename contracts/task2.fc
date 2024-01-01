@@ -55,7 +55,7 @@
         set_data(begin_cell()                                               ;; save storage
                         .store_slice(begin_cell().store_uint(0, 11).store_uint(admin_addr, 256).end_cell().begin_parse())
                         .store_dict(dict1)
-                        .store_uint(total_share, 32)
+                        .store_uint(total_share, 64)
                         .end_cell());    
         
     }
@@ -102,7 +102,7 @@
                                         .end_cell()
                                         .begin_parse())     ;; to get Slice
                         .store_dict(dict1)
-                        .store_uint(total_share, 32)
+                        .store_uint(total_share, 64)
                         .end_cell()); 
     }
 
