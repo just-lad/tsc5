@@ -30,34 +30,22 @@
 
         cell dict1 = local_storage~load_dict();
 
-        int total_share = 0;
-        if local_storage.slice_bits() >= 64 {
-            total_share = local_storage~load_uint(64);
-        }
-
-        if (~ dict1.dict_empty?()) {
-            
-            (slice share_l, int flag) = dict1.udict_get?(256, user_n);    ;; get user and share from storage
-            if (~ flag) {                                   ;; check if exists in dict
-                dict1~udict_set(256, user_n, share_n);                      ;; not exist -> add
-                total_share += share;
-            } else {
-                dict1~udict_replace?(256, user_n, share_n);                 ;; exist -> update
-                total_share += share;
-                total_share -= share_l~load_uint(32);
-        }
+        if (dict1.dict_empty?()) {
+            dict1~udict_set(256, user_n, share_n);
         } else {
-            ;; dict empty
-            dict1~udict_set(256, user_n, share_n);                          ;; not exist -> add
-            total_share += share;
+            (slice share_l, int flag) = dict1.udict_get?(256, user_n);
+            if (flag) {
+                dict1~udict_replace?(256, user_n, share_n);
+            } else {
+                dict1~udict_set(256, user_n, share_n);
+            }
         }
 
-        set_data(begin_cell()                                               ;; save storage
-                        .store_slice(begin_cell().store_uint(0, 11).store_uint(admin_addr, 256).end_cell().begin_parse())
-                        .store_dict(dict1)
-                        .store_uint(total_share, 64)
-                        .end_cell());    
-        
+        set_data(begin_cell()
+                    .store_uint(1024, 11)
+                    .store_uint(admin_addr, 256)
+                    .store_dict(dict1)
+                    .end_cell());    
     }
 
     ;; remove_user#278205c8 query_id:uint64 address:MsgAddressInt = InternalMsgBody;
@@ -74,36 +62,18 @@
 
         cell dict1 = local_storage~load_dict();
 
-        int total_share = 0;
-        if local_storage.slice_bits() >= 64 {
-            total_share = local_storage~load_uint(64);
-        }
+        throw_if(121, dict1.dict_empty?());
+        in_msg_body~skip_bits(64 + 11);
+        int user_n = in_msg_body~load_uint(256);
+        (slice share_l, int flag) = dict1.udict_get?(256, user_n);
+        throw_unless(121, flag);
+        (cell dict1, int flag) = udict_delete?(dict1, 256, user_n);
 
-        if (~ dict1.dict_empty?()) {
-
-            in_msg_body~skip_bits(64 + 11);
-            int user_n = in_msg_body~load_uint(256);                        ;; get user address as int (MsgAddressInt = 11 + 256)
-
-            (slice share_l, int flag) = dict1.udict_get?(256, user_n);      ;; get user and share from storage
-            if (flag) {
-                (cell dict1, int flag) = udict_delete?(dict1, 256, user_n); ;; user exists -> delete
-                total_share -= share_l~load_uint(32);
-            } else {
-                throw(121);                 ;; user not exist -> throw 121
-            }
-        } else {                            ;; dict empty
-            throw(121);                     ;; user not exist -> throw 121
-        }
-        
-        set_data(begin_cell()               ;; save storage
-                        .store_slice(begin_cell()
-                                        .store_uint(0, 11)
-                                        .store_uint(admin_addr, 256)
-                                        .end_cell()
-                                        .begin_parse())     ;; to get Slice
-                        .store_dict(dict1)
-                        .store_uint(total_share, 64)
-                        .end_cell()); 
+        set_data(begin_cell()
+                    .store_uint(1024, 11)
+                    .store_uint(admin_addr, 256)
+                    .store_dict(dict1)
+                    .end_cell()); 
     }
 
     ;; split_ton#068530b3 query_id:uint64 = InternalMsgBody;
@@ -115,17 +85,19 @@
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
-        cell dict1 = local_storage~load_dict();
-
-        if (~ dict1.dict_empty?()) {
+        if (~ slice_empty?(local_storage)) { 
+            cell dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             throw_unless(122, flag);
 
             int total_share = 0;
-            if local_storage.slice_bits() >= 64 {
-                total_share = local_storage~load_uint(64);
-            }
 
+            ;; total_share counting routin
+            while (flag) {
+                int share_t = val.preload_uint(32);
+                total_share += share_t;
+                (key, val, flag) = dict1.udict_get_next?(256, key);
+            }
             ;; sending routin 
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             while (flag) {
@@ -151,25 +123,31 @@
         slice local_storage = get_data().begin_parse();
         local_storage~skip_bits(11 + 256);
 
-        cell dict1 = local_storage~load_dict();
-
-        if (~ dict1.dict_empty?()) {
+        if (~ slice_empty?(local_storage)) { 
+            cell dict1 = local_storage~load_dict();              ;; load hashmap if it exists
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             throw_unless(122, flag);
-
-            int total_share = 0;
-            if local_storage.slice_bits() >= 64 {
-                total_share = local_storage~load_uint(64);
-            }
             
             int query_id = in_msg_body~load_uint(64);
             int amount = in_msg_body~load_coins();
+            if (amount <= 0) {
+                return ();
+            }
 
             var cs = in_msg_full.begin_parse();
-            cs~skip_bits(4);
-
+            int flags = cs~load_uint(4);
+            if (flags & 1) { ;; ignore all bounced messages
+                return ();
+            }
             slice jetton_addr = cs~load_msg_addr();
 
+            int total_share = 0;
+            ;; total_share counting routin
+            while (flag) {
+                int share_t = val.preload_uint(32);
+                total_share += share_t;
+                (key, val, flag) = dict1.udict_get_next?(256, key);
+            }
             ;; sending Jettons according to share 
             (int key, slice val, int flag) = dict1.udict_get_min?(256);
             while (flag) {
