@@ -150,6 +150,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
                                     tuple temp_row = decrypted.at(new_x);
                                     temp_row = tset(temp_row, new_y, new_vals);
                                     decrypted = tset(decrypted, new_x, temp_row);
+                                    to_visit~tpush(to_tuple([new_x, new_y]));
                                 }
                             }
                         }
