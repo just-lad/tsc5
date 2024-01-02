@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from 'ton-core';
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode, TupleItem } from 'ton-core';
 
 export type Task4Config = {};
 
@@ -25,5 +25,14 @@ export class Task4 implements Contract {
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().endCell(),
         });
+    }
+
+    async getSolve(provider: ContractProvider, n: bigint, m: bigint, maze: TupleItem[]) {
+        const result = (await provider.get('solve', [
+            {type: "int", value: n},
+            {type: "int", value: m},
+            {type: "tuple", items: maze},
+        ]));
+        return result;
     }
 }
