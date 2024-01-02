@@ -139,7 +139,7 @@ describe('Task4Basic', () => {
         row.writeNumber(bigintConversion.textToBigint('S'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         row.writeNumber(bigintConversion.textToBigint('.'));
-        row.writeNumber(bigintConversion.textToBigint('.'));    // ?
+        row.writeNumber(bigintConversion.textToBigint('?'));
         row.writeNumber(bigintConversion.textToBigint('X'));
         let row1 = row.build();
         maze.writeTuple(row1);
@@ -186,7 +186,7 @@ describe('Task4Basic', () => {
         row = new TupleBuilder;
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('.'));
-        row.writeNumber(bigintConversion.textToBigint('.')); // ?
+        row.writeNumber(bigintConversion.textToBigint('?'));
         row.writeNumber(bigintConversion.textToBigint('.'));
         row.writeNumber(bigintConversion.textToBigint('.'));
         row1 = row.build();
@@ -201,21 +201,7 @@ describe('Task4Basic', () => {
         maze.writeTuple(row1);
         let init_maze = maze.build();
         let result = await task4Basic.getSolve(8n, 5n, init_maze);
-        let out_maze = result.stack.skip(0).skip(1).skip(2).readTuple();
-        let out_row1 = out_maze.readTuple();
-        let out_row2 = out_maze.readTuple();
-        let out_row3 = out_maze.readTuple();
-        
-        let readable_maze = [[bigintConversion.bigintToText(out_row1.readBigNumber()), 
-                                bigintConversion.bigintToText(out_row1.readBigNumber()),
-                                    bigintConversion.bigintToText(out_row1.readBigNumber())],
-                            [bigintConversion.bigintToText(out_row2.readBigNumber()), 
-                                bigintConversion.bigintToText(out_row2.readBigNumber()),
-                                    bigintConversion.bigintToText(out_row2.readBigNumber())],
-                            [bigintConversion.bigintToText(out_row3.readBigNumber()), 
-                                bigintConversion.bigintToText(out_row3.readBigNumber()),
-                                    bigintConversion.bigintToText(out_row3.readBigNumber())]
-                                            ]
-        console.log("Result ", readable_maze);
+        let out_maze = result.stack;
+        console.log("Stack ", out_maze);
     });
 });
