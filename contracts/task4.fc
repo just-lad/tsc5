@@ -162,9 +162,9 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
             new_x += 1;
         }
         ;; take new cur_point as closest to start from all to_visit cells
-        if ((cur_p.at(0) == end.at(0)) & (cur_p.at(1) == end.at(1))) {
-            return decrypted;
-        }
+        ;; if ((cur_p.at(0) == end.at(0)) & (cur_p.at(1) == end.at(1))) {
+        ;;     return decrypted;
+        ;; }
         (cur_p, to_visit) = tmin(to_visit, decrypted);
     }
     return decrypted;
