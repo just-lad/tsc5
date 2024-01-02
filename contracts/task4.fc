@@ -111,7 +111,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
 
 ;; input: start - start point (x,y), decrypted - decrypted maze
 ;; output: tuple - forwardtraced maze
-(tuple) forwardtrace (tuple start, tuple decrypted) impure inline {
+(tuple) forwardtrace (tuple start, tuple end, tuple decrypted) impure inline {
     ;; forwardtrace
     tuple to_visit = to_tuple([start]);
     tuple cur_p = to_visit.at(0);
@@ -162,7 +162,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
         }
         ;; take new cur_point as closest to start from all to_visit cells
         (cur_p, to_visit) = tmin(to_visit, decrypted);
-        if ((cur_p.at(0) == start.at(0)) & (cur_p.at(1) == start.at(1))) {
+        if ((cur_p.at(0) == end.at(0)) & (cur_p.at(1) == end.at(1))) {
             return decrypted;
         }
     }
@@ -247,7 +247,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
 
     ;; forwardtrace decrypted maze to get proper length
     ;; so that points are [real_length, weight]
-    tuple forwardtraced = forwardtrace(start_p, decrypted);
+    tuple forwardtraced = forwardtrace(start_p, end_p, decrypted);
     int encrypted_len = forwardtraced.at(end_p.at(0)).at(end_p.at(1)).at(0);
     
     ;; backtrace forwardtraced decrypted maze to get path as
