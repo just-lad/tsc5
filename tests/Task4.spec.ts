@@ -204,4 +204,35 @@ describe('Task4', () => {
         let out_maze = result.stack;
         console.log("Stack ", out_maze);
     });
+
+    it('should solve 31x31', async () => {
+        let row = new TupleBuilder;
+        let maze = new TupleBuilder;
+        row.writeNumber(bigintConversion.textToBigint('S'));
+        for (var i = 0; i < 30; i++) {
+            row.writeNumber(bigintConversion.textToBigint('.'));
+        }
+        let row1 = row.build();
+        maze.writeTuple(row1);
+        row = new TupleBuilder;
+        for (var j = 0; j < 29; j++) {
+            for (var i = 0; i < 31; i++) {
+                row.writeNumber(bigintConversion.textToBigint('.'));
+            }
+            row1 = row.build();
+            maze.writeTuple(row1);
+            row = new TupleBuilder;
+        }
+        for (var i = 0; i < 30; i++) {
+            row.writeNumber(bigintConversion.textToBigint('.'));
+        }
+        row.writeNumber(bigintConversion.textToBigint('E'));
+        row1 = row.build();
+        maze.writeTuple(row1);
+        let init_maze = maze.build();
+        let result = await task4.getSolve(31n, 31n, init_maze);
+        console.log("GasUsed ", result.gasUsed);
+        let out_maze = result.stack;
+        console.log("Stack ", out_maze);
+    });
 });

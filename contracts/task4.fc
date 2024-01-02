@@ -231,7 +231,7 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
 (int, int, int, tuple) solve(int n, int m, tuple maze) method_id {
     set_gas_limit(100000000);
     if (maze.tlen() == 0) {
-        return (-1, 0, 0, null());
+        return (0, 0, 0, null());
     }
 
     ;; decrypt maze into struct:
