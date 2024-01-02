@@ -25,19 +25,6 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     return (rtpl);
 }
 
-(tuple) tshift (tuple temp) {
-    int i = 0;
-    tuple temp2 = empty_tuple();
-
-    repeat (temp.tlen()) {
-        if (i > 0) {
-            temp2~tpush(temp.at(i));
-        }
-        i += 1;
-    }
-    return temp2;
-}
-
 ;; input: list - list of points to visit, matrix - decrypted maze
 ;; output: tuple - point(x,y) with minimal length, tuple - to_visit with deleted min point
 (tuple, tuple) tmin (tuple list, tuple matrix) impure inline {
@@ -273,6 +260,9 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     ;; make_solution from path_points into init_maze
     maze = make_solution(succ_path, maze);
 
-    return (-1, (encrypted_len / 1000), (encrypted_len - ((encrypted_len / 1000) * 1000)), maze);
-    ;;return (-1, probability, length, solution);
+    int walls = (encrypted_len / 1000000);
+    int probability = ((encrypted_len - (1000000 * walls)) / 1000);
+    int length = encrypted_len - (walls * 1000000) - (probability * 1000);
+
+    return (-1, probability, length, maze);
 }
