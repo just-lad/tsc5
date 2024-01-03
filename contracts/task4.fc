@@ -306,7 +306,6 @@ forall X -> (tuple) tset (tuple tpl, int index, X value) {
     ;; so that points are [real_length, weight]
     tuple forwardtraced = forwardtrace(start_p, end_p, decrypted);
     int encrypted_len = forwardtraced.at(end_p.at(0)).at(end_p.at(1)).at(0);
-    encrypted_len~dump();
     ;; backtrace forwardtraced decrypted maze to get path as
     ;; [path_point0, path_point1, path_point2]
     ;; where path_point is [x_coord, y_coord]
