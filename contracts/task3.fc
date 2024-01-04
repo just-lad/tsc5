@@ -17,8 +17,7 @@
 () recv_internal(int msg_value, int balance, cell in_msg_full, slice in_msg_body) impure {
 ;; expected_version:uint32 new_code:(Maybe ^Cell) migrations:(HashmapE 32 MigrationPayload) payload:^Cell = InternalMsgBody;
     int expected_version = in_msg_body~load_uint(32); ;; The expected version
-    cell update_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
-    throw_if(200, (cell_null?(update_code) & (expected_version != 0)));
+    cell new_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
 
 ;; new_version:uint32 migration_code:(Maybe ^Cell) = MigrationPayload;
     cell new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
@@ -34,6 +33,7 @@
         set_data(wrap_storage(1, storage));
         return();
     } else {
+        int current = version();
         ;; check expected_version == current
         if (expected_version == version()) {
             ;; expected_version == current
@@ -45,28 +45,38 @@
         }
 
         ;; check expected_version > current => check update_code not null => update
-        if (expected_version > version()) {
-            int ver = version();
+        if (expected_version > current) {
+            throw_if(200, cell_null?(new_code));
             cell storage = get_storage();
-            while (ver != expected_version) {
-                (slice mig_load, int flag) = new_version.udict_get?(32, ver);
+
+            ;; checks if all version from current to expected exists in dict
+            while (current != expected_version) {
+                (slice mig_load, int flag) = new_version.udict_get?(32, current);
                 throw_unless(400, flag);
                 int new_ver = mig_load~load_uint(32);
-                throw_unless(400, new_ver != ver + 1);
+                throw_unless(400, new_ver != current + 1);
+                current += 1;
+            }
+
+            ;; all version from current to expected exists in dict, so go through and migrate if needed
+            current = version();
+            while (current != expected_version) {
+                (slice mig_load, int flag) = new_version.udict_get?(32, current);
+                current += 1;
+                mig_load~skip_bits(32);
                 cell mig_code = mig_load~load_maybe_ref();
                 if (~ cell_null?(mig_code)) {
                     storage = get_storage();
                     set_code(mig_code);
                     set_c3(mig_code.begin_parse().bless());
                     storage = migrate_one(storage);
-                    set_data(wrap_storage(new_ver, storage));
+                    set_data(wrap_storage(current, storage));
                 }
-                ver = new_ver;
             }
+            set_code(new_code);
+            set_c3(new_code.begin_parse().bless());
             storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
-            set_data(wrap_storage(ver, storage));
-            set_code(update_code);
-            set_c3(update_code.begin_parse().bless());
+            set_data(wrap_storage(current, storage));
             return();
         }
     }
