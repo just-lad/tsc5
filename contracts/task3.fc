@@ -16,7 +16,7 @@
     int current = version();
     ;; check expected_version == current
     if (expected_version == current) {
-        storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
+        cell storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
         set_data(wrap_storage(1, storage));
         return();
     }
