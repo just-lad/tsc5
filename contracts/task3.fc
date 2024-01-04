@@ -45,7 +45,7 @@
 
         ;; check expected_version > current => check update_code not null => update
         if (expected_version > version()) {
-            throw_unless(200, cell_null?(update_code));
+            throw_if(200, cell_null?(update_code));
             throw_if(400, dict_empty?(new_version));
             int ver = version();
             while (ver != expected_version) {
