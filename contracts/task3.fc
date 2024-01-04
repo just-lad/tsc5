@@ -17,10 +17,10 @@
 () recv_internal(int msg_value, int balance, cell in_msg_full, slice in_msg_body) impure {
 ;; expected_version:uint32 new_code:(Maybe ^Cell) migrations:(HashmapE 32 MigrationPayload) payload:^Cell = InternalMsgBody;
     int expected_version = in_msg_body~load_uint(32); ;; The expected version
-    var update_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
+    cell update_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
 
     ;; new_version:uint32 migration_code:(Maybe ^Cell) = MigrationPayload;
-    var new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
+    cell new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
     cell payload = in_msg_body~load_ref(); ;; payload to process
 
     ;; ---
@@ -50,17 +50,15 @@
             int ver = version();
             while (ver != expected_version) {
                 (slice mig_load, int flag) = new_version.udict_get?(32, ver);
-                if (flag) {
-                    int new_ver = mig_load~load_uint(32);
-                    var mig_code = mig_load~load_maybe_ref();
-                    if (~ cell_null?(mig_code)) {
-                        set_c3(mig_code.begin_parse().bless());
-                        migrate_one(get_storage());
-                    }
-                    ver += 1;
-                } else {
-                    throw(400);
+                throw_unless(400, flag);
+                int new_ver = mig_load~load_uint(32);
+                throw_unless(400, new_ver != ver + 1);
+                cell mig_code = mig_load~load_maybe_ref();
+                if (~ cell_null?(mig_code)) {
+                    set_c3(mig_code.begin_parse().bless());
+                    migrate_one(get_storage());
                 }
+                ver += 1;
             }
             cell storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
             set_data(wrap_storage(ver, storage));
