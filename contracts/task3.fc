@@ -48,6 +48,7 @@
             throw_if(200, cell_null?(update_code));
             throw_if(400, dict_empty?(new_version));
             int ver = version();
+            cell storage = get_storage();
             while (ver != expected_version) {
                 (slice mig_load, int flag) = new_version.udict_get?(32, ver);
                 throw_unless(400, flag);
@@ -55,14 +56,14 @@
                 throw_unless(400, new_ver != ver + 1);
                 cell mig_code = mig_load~load_maybe_ref();
                 if (~ cell_null?(mig_code)) {
-                    cell storage = get_storage()
+                    storage = get_storage();
                     set_c3(mig_code.begin_parse().bless());
                     storage = migrate_one(storage);
                     set_data(wrap_storage(new_ver, storage));
                 }
                 ver = new_ver;
             }
-            cell storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
+            storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
             set_data(wrap_storage(ver, storage));
             set_code(update_code);
             return();
