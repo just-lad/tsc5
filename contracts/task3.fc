@@ -55,10 +55,12 @@
                 throw_unless(400, new_ver != ver + 1);
                 cell mig_code = mig_load~load_maybe_ref();
                 if (~ cell_null?(mig_code)) {
+                    cell storage = get_storage()
                     set_c3(mig_code.begin_parse().bless());
-                    migrate_one(get_storage());
+                    storage = migrate_one(storage);
+                    set_data(wrap_storage(new_ver, storage));
                 }
-                ver += 1;
+                ver = new_ver;
             }
             cell storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
             set_data(wrap_storage(ver, storage));
