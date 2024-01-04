@@ -18,8 +18,9 @@
 ;; expected_version:uint32 new_code:(Maybe ^Cell) migrations:(HashmapE 32 MigrationPayload) payload:^Cell = InternalMsgBody;
     int expected_version = in_msg_body~load_uint(32); ;; The expected version
     cell update_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
+    throw_if(200, (cell_null?(update_code) & (expected_version != 0)));
 
-    ;; new_version:uint32 migration_code:(Maybe ^Cell) = MigrationPayload;
+;; new_version:uint32 migration_code:(Maybe ^Cell) = MigrationPayload;
     cell new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
     cell payload = in_msg_body~load_ref(); ;; payload to process
 
@@ -45,8 +46,6 @@
 
         ;; check expected_version > current => check update_code not null => update
         if (expected_version > version()) {
-            throw_if(200, cell_null?(update_code));
-            throw_if(400, dict_empty?(new_version));
             int ver = version();
             cell storage = get_storage();
             while (ver != expected_version) {
@@ -57,6 +56,7 @@
                 cell mig_code = mig_load~load_maybe_ref();
                 if (~ cell_null?(mig_code)) {
                     storage = get_storage();
+                    set_code(mig_code);
                     set_c3(mig_code.begin_parse().bless());
                     storage = migrate_one(storage);
                     set_data(wrap_storage(new_ver, storage));
@@ -66,6 +66,7 @@
             storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
             set_data(wrap_storage(ver, storage));
             set_code(update_code);
+            set_c3(update_code.begin_parse().bless());
             return();
         }
     }
