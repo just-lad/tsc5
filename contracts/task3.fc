@@ -17,10 +17,10 @@
 () recv_internal(int msg_value, int balance, cell in_msg_full, slice in_msg_body) impure {
 ;; expected_version:uint32 new_code:(Maybe ^Cell) migrations:(HashmapE 32 MigrationPayload) payload:^Cell = InternalMsgBody;
     int expected_version = in_msg_body~load_uint(32); ;; The expected version
-    cell update_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
+    var update_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
 
     ;; new_version:uint32 migration_code:(Maybe ^Cell) = MigrationPayload;
-    cell new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
+    var new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
     cell payload = in_msg_body~load_ref(); ;; payload to process
 
     ;; ---
@@ -30,18 +30,44 @@
     if (expected_version == 0) {
         slice ds = get_data().begin_parse();
         cell storage = ds~load_ref();
-        storage = process_message(storage, msg_value, balance, in_msg_full, payload.begin_parse());
-        set_data(wrap_storage(1, storage)); ;; -2 is just a random placeholder for the version
+        set_data(wrap_storage(1, storage));
         return();
     } else {
         ;; check expected_version == current
+        if (expected_version == version()) {
+            ;; expected_version == current
+            slice ds = get_data().begin_parse();
+            cell storage = ds~load_ref();
+            storage = process_message(storage, msg_value, balance, in_msg_full, payload.begin_parse());
+            set_data(wrap_storage(1, storage));
+            return();
+        }
 
         ;; check expected_version > current => check update_code not null => update
-
-        ;; check expected_version < current
+        if (expected_version > version()) {
+            throw_unless(200, update_code == 0);
+            throw_unless(400, new_version == 0);
+            int ver = version();
+            while (ver != expected_version) {
+                (slice mig_load, int flag) = new_version.udict_get?(32, ver);
+                if (flag) {
+                    int new_ver = mig_load~load_uint(32);
+                    var mig_code = mig_load~load_ref();
+                    if (mig_code != 0) {
+                        set_c3(mig_code.begin_parse().bless());
+                        migrate_one(get_storage());
+                    }
+                    ver += 1;
+                } else {
+                    throw(400);
+                }
+            }
+            cell storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
+            set_data(wrap_storage(1, storage));
+            set_code(update_code);
+            return();
+        }
     }
-
-    
 }
 
 cell get_storage() {
