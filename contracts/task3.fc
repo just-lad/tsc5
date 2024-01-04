@@ -41,10 +41,9 @@
                 storage = migrate_one(storage);
             }
         }
-        set_data(wrap_storage(current, storage));
         set_code(new_code);
         set_c3(new_code.begin_parse().bless());
-        storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
+        storage = process_message(storage, msg_value, balance, in_msg_full, payload.begin_parse());
         set_data(wrap_storage(current, storage));
         return();
     }
