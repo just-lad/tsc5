@@ -1,84 +1,61 @@
 #include "imports/stdlib.fc";
 
-;; All the code in recv_internal, get_storage, wrap_storage, and version
-;; serves as an example of the intended structure.
-
-;; The provided code is an "empty wrapper." It:
-;; + Parses "wrapped" incoming messages (discards versioning information)
-;; + "Wraps" the call to the version-specific process_message
-;; + Implements "get_storage" for version-specific get-methods
-;; However, it does not yet implement any upgrade logic, which is your task.
-
-;; The empty wrapper is provided to demonstrate
-;; how version-specific code is intended to be "wrapped" and interacted with.
-;; You may delete and rewrite as needed,
-;; but the final implementation must adhere to the same structure
-
 () recv_internal(int msg_value, int balance, cell in_msg_full, slice in_msg_body) impure {
 ;; expected_version:uint32 new_code:(Maybe ^Cell) migrations:(HashmapE 32 MigrationPayload) payload:^Cell = InternalMsgBody;
     int expected_version = in_msg_body~load_uint(32); ;; The expected version
     cell new_code = in_msg_body~load_maybe_ref(); ;; the expected code cell or 0 if no code attached
 
 ;; new_version:uint32 migration_code:(Maybe ^Cell) = MigrationPayload;
-    cell new_version = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
+    cell migrations = in_msg_body~load_dict(); ;; migrations dict aka MigrationPayload or 0 if no dict attached
     cell payload = in_msg_body~load_ref(); ;; payload to process
 
-    ;; ---
-    ;; here you should check if it's the first call or not based on `expected_version` as stated in the task
-    ;; if it is the first call, wrap the storage and finish execution by returning from the function
-    ;; ---
     if (expected_version == 0) {
+        set_data(wrap_storage(1, get_data()));
+        return();
+    }
+    int current = version();
+    ;; check expected_version == current
+    if (expected_version == version()) {
         slice ds = get_data().begin_parse();
         cell storage = ds~load_ref();
+        storage = process_message(storage, msg_value, balance, in_msg_full, payload.begin_parse());
         set_data(wrap_storage(1, storage));
         return();
-    } else {
-        int current = version();
-        ;; check expected_version == current
-        if (expected_version == version()) {
-            ;; expected_version == current
-            slice ds = get_data().begin_parse();
-            cell storage = ds~load_ref();
-            storage = process_message(storage, msg_value, balance, in_msg_full, payload.begin_parse());
-            set_data(wrap_storage(1, storage));
-            return();
+    }
+
+    ;; check expected_version > current => check update_code not null => update
+    if (expected_version > current) {
+        throw_if(200, cell_null?(new_code));
+        cell storage = get_storage();
+
+        ;; checks if all version from current to expected exists in dict
+        while (current != expected_version) {
+            (slice mig_load, int flag) = migrations.udict_get?(32, current);
+            throw_unless(400, flag);
+            int new_ver = mig_load~load_uint(32);
+            throw_unless(400, new_ver != current + 1);
+            current += 1;
         }
 
-        ;; check expected_version > current => check update_code not null => update
-        if (expected_version > current) {
-            throw_if(200, cell_null?(new_code));
-            cell storage = get_storage();
-
-            ;; checks if all version from current to expected exists in dict
-            while (current != expected_version) {
-                (slice mig_load, int flag) = new_version.udict_get?(32, current);
-                throw_unless(400, flag);
-                int new_ver = mig_load~load_uint(32);
-                throw_unless(400, new_ver != current + 1);
-                current += 1;
+        ;; all version from current to expected exists in dict, so go through and migrate if needed
+        current = version();
+        while (current != expected_version) {
+            (slice mig_load, int flag) = migrations.udict_get?(32, current);
+            current += 1;
+            mig_load~skip_bits(32);
+            cell mig_code = mig_load~load_maybe_ref();
+            if (~ cell_null?(mig_code)) {
+                storage = get_storage();
+                set_c3(mig_code.begin_parse().bless());
+                storage = migrate_one(storage);
+                set_data(wrap_storage(current, storage));
             }
-
-            ;; all version from current to expected exists in dict, so go through and migrate if needed
-            current = version();
-            while (current != expected_version) {
-                (slice mig_load, int flag) = new_version.udict_get?(32, current);
-                current += 1;
-                mig_load~skip_bits(32);
-                cell mig_code = mig_load~load_maybe_ref();
-                if (~ cell_null?(mig_code)) {
-                    storage = get_storage();
-                    set_code(mig_code);
-                    set_c3(mig_code.begin_parse().bless());
-                    storage = migrate_one(storage);
-                    set_data(wrap_storage(current, storage));
-                }
-            }
-            set_code(new_code);
-            set_c3(new_code.begin_parse().bless());
-            storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
-            set_data(wrap_storage(current, storage));
-            return();
         }
+        set_code(new_code);
+        set_c3(new_code.begin_parse().bless());
+        storage = process_message(get_storage(), msg_value, balance, in_msg_full, payload.begin_parse());
+        set_data(wrap_storage(current, storage));
+        return();
     }
 }
 
