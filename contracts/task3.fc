@@ -45,15 +45,15 @@
 
         ;; check expected_version > current => check update_code not null => update
         if (expected_version > version()) {
-            throw_unless(200, update_code == 0);
-            throw_unless(400, new_version == 0);
+            throw_unless(200, cell_null?(update_code));
+            throw_if(400, dict_empty?(new_version));
             int ver = version();
             while (ver != expected_version) {
                 (slice mig_load, int flag) = new_version.udict_get?(32, ver);
                 if (flag) {
                     int new_ver = mig_load~load_uint(32);
-                    var mig_code = mig_load~load_ref();
-                    if (mig_code != 0) {
+                    var mig_code = mig_load~load_maybe_ref();
+                    if (~ cell_null?(mig_code)) {
                         set_c3(mig_code.begin_parse().bless());
                         migrate_one(get_storage());
                     }
