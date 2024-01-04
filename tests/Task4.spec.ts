@@ -68,13 +68,13 @@ describe('Task4', () => {
         maze.writeTuple(row1);
         let init_maze = maze.build();
 
-        // let result = await task4.getSolve(3n, 3n, init_maze);
-        // console.log("GasUsed 3*3 ", result.gasUsed);
-        // let out_maze = result.stack;
-        // let walls = out_maze.readBigNumber();
-        // let probability = out_maze.readBigNumber();
-        // let lenght = out_maze.readBigNumber();
-        // expect([walls, probability, lenght]).toEqual([0n, 0n, 2n]);
+        let result = await task4.getSolve(3n, 3n, init_maze);
+        console.log("GasUsed 3*3 ", result.gasUsed);
+        let out_maze = result.stack;
+        let walls = out_maze.readBigNumber();
+        let probability = out_maze.readBigNumber();
+        let lenght = out_maze.readBigNumber();
+        expect([walls, probability, lenght]).toEqual([0n, 0n, 2n]);
     });
     it('example 8x5', async () => {
         let row = new TupleBuilder;
@@ -144,13 +144,13 @@ describe('Task4', () => {
         maze.writeTuple(row1);
         let init_maze = maze.build();
 
-        // let result = await task4.getSolve(8n, 5n, init_maze);
-        // console.log("GasUsed 8*5 ", result.gasUsed);
-        // let out_maze = result.stack;
-        // let walls = out_maze.readBigNumber();
-        // let probability = out_maze.readBigNumber();
-        // let lenght = out_maze.readBigNumber();
-        // expect([walls, probability, lenght]).toEqual([0n, 1n, 7n]);
+        let result = await task4.getSolve(8n, 5n, init_maze);
+        console.log("GasUsed 8*5 ", result.gasUsed);
+        let out_maze = result.stack;
+        let walls = out_maze.readBigNumber();
+        let probability = out_maze.readBigNumber();
+        let lenght = out_maze.readBigNumber();
+        expect([walls, probability, lenght]).toEqual([0n, 1n, 7n]);
 
     });
 
@@ -180,13 +180,13 @@ describe('Task4', () => {
         maze.writeTuple(row1);
         let init_maze = maze.build();
 
-        // let result = await task4.getSolve(31n, 31n, init_maze);
-        // console.log("GasUsed 31*31 ", result.gasUsed);
-        // let out_maze = result.stack;
-        // let walls = out_maze.readBigNumber();
-        // let probability = out_maze.readBigNumber();
-        // let lenght = out_maze.readBigNumber();
-        // expect([walls, probability, lenght]).toEqual([0n, 0n, 30n]);
+        let result = await task4.getSolve(31n, 31n, init_maze);
+        console.log("GasUsed 31*31 ", result.gasUsed);
+        let out_maze = result.stack;
+        let walls = out_maze.readBigNumber();
+        let probability = out_maze.readBigNumber();
+        let lenght = out_maze.readBigNumber();
+        expect([walls, probability, lenght]).toEqual([0n, 0n, 30n]);
     });
     it('snail 31x31', async () => {
         let maze = new TupleBuilder;
@@ -460,7 +460,7 @@ describe('Task4', () => {
         let walls = out_maze.readBigNumber();
         let probability = out_maze.readBigNumber();
         let lenght = out_maze.readBigNumber();
-        console.log("Walls, prob, length ", [walls, probability, lenght]);
-        //expect([walls, probability, lenght]).toEqual([0n, 0n, 30n]);
+        //console.log("Walls, prob, length ", [walls, probability, lenght]);
+        expect([walls, probability, lenght]).toEqual([0n, 1n, 470n]);
     });
 });
