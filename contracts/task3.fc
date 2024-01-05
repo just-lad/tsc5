@@ -27,13 +27,13 @@
         cell storage = get_storage();
 
         ;; checks if all version from current to expected exists in dict
-        while (current != expected_version) {
+        while (current < expected_version) {
             (slice mig_load, int flag) = migrations.udict_get?(32, current);
             throw_unless(400, flag);
             int new_ver = mig_load~load_uint(32);
-            throw_unless(400, new_ver != current + 1);
+            ;; throw_unless(400, new_ver != current + 1);
             cell mig_code = mig_load~load_maybe_ref();
-            current += 1;
+            current == new_ver;
             if (~ cell_null?(mig_code)) {
                 set_c3(mig_code.begin_parse().bless());
                 storage = migrate_one(storage);
