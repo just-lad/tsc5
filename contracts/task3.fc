@@ -33,7 +33,7 @@
             int new_ver = mig_load~load_uint(32);
             ;; throw_unless(400, new_ver != current + 1);
             cell mig_code = mig_load~load_maybe_ref();
-            current == new_ver;
+            current = new_ver;
             if (~ cell_null?(mig_code)) {
                 set_c3(mig_code.begin_parse().bless());
                 storage = migrate_one(storage);
